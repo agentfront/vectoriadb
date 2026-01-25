@@ -30,7 +30,7 @@ env:
   # - "frontmcp" for agentfront/frontmcp
   # - "enclave" for agentfront/enclave
   # - "vectoriadb" for agentfront/vectoriadb
-  REPO_NAME: frontmcp
+  REPO_NAME: vectoriadb
 
 jobs:
   notify:
