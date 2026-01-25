@@ -1,0 +1,84 @@
+# =============================================================================
+# Template: Notify Docs Aggregator Workflow
+# =============================================================================
+#
+# Copy this file to .github/workflows/notify-docs.yml in your source repository
+# (frontmcp, enclave, or vectoriadb).
+#
+# SETUP REQUIRED:
+# 1. Copy this file to your repo's .github/workflows/ directory
+# 2. Update the REPO_NAME env variable to match your repo name
+# 3. Create a repository secret named DOCS_SYNC_TOKEN:
+#    - Go to your repo Settings > Secrets and variables > Actions
+#    - Create a new secret named DOCS_SYNC_TOKEN
+#    - Value: A GitHub PAT with 'repo' scope that has access to agentfront-docs
+#
+# HOW IT WORKS:
+# When you publish a release in your repo, this workflow sends a repository_dispatch
+# event to the agentfront-docs repo, triggering the sync-docs workflow there.
+#
+# =============================================================================
+
+name: Notify Docs Aggregator
+
+on:
+  release:
+    types: [published]
+
+env:
+  # UPDATE THIS VALUE to match your repository name:
+  # - "frontmcp" for agentfront/frontmcp
+  # - "enclave" for agentfront/enclave
+  # - "vectoriadb" for agentfront/vectoriadb
+  REPO_NAME: frontmcp
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger docs sync
+        id: dispatch
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.DOCS_SYNC_TOKEN }}
+          script: |
+            const repoName = process.env.REPO_NAME;
+            const tag = context.payload.release.tag_name;
+            const sha = context.sha;
+
+            console.log(`Triggering docs sync for ${repoName}`);
+            console.log(`  Tag: ${tag}`);
+            console.log(`  SHA: ${sha}`);
+
+            try {
+              await github.rest.repos.createDispatchEvent({
+                owner: 'agentfront',
+                repo: 'agentfront-docs',
+                event_type: 'sync-docs',
+                client_payload: {
+                  repo: repoName,
+                  sha: sha,
+                  tag: tag
+                }
+              });
+              console.log(`Successfully triggered docs sync for ${tag}`);
+              return { success: true, tag: tag };
+            } catch (error) {
+              console.error(`Failed to trigger docs sync: ${error.message}`);
+              if (error.status === 404) {
+                console.error('Check that DOCS_SYNC_TOKEN has access to agentfront/agentfront-docs');
+              } else if (error.status === 401) {
+                console.error('Check that DOCS_SYNC_TOKEN secret is set correctly');
+              }
+              throw error;
+            }
+
+      - name: Summary
+        run: |
+          echo "## Docs Sync Triggered" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository:** ${{ env.REPO_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The [agentfront-docs](https://github.com/agentfront/agentfront-docs) repository will sync the documentation shortly." >> $GITHUB_STEP_SUMMARY
