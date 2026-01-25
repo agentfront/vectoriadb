@@ -66,14 +66,18 @@ console.log(results[0].score); // 0.87
 
 ## Documentation
 
-For full documentation including:
+| Guide | Description |
+|-------|-------------|
+| [Overview](./docs/overview.md) | Installation, quick start, configuration |
+| [Indexing](./docs/guides/indexing.md) | Adding and updating documents |
+| [Search](./docs/guides/search.md) | Querying with filters and thresholds |
+| [Persistence](./docs/guides/persistence.md) | File and Redis storage adapters |
+| [HNSW](./docs/guides/hnsw.md) | Scaling to 100k+ documents |
+| [TF-IDF](./docs/guides/tfidf.md) | Zero-dependency alternative |
+| [Tool Discovery](./docs/guides/tool-discovery.md) | Complete tool indexing example |
+| [Error Handling](./docs/reference/errors.md) | Typed error classes |
 
-- API Reference
-- Advanced Usage (HNSW, persistence, type-safe metadata)
-- Error Handling
-- Performance Tuning
-
-See the [detailed documentation](./libs/vectoriadb/README.md).
+See also the [detailed API documentation](./libs/vectoriadb/README.md).
 
 ## Development
 
