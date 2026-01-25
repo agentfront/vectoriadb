@@ -1,6 +1,8 @@
-# HNSW Indexing
-
-Scale to large datasets with HNSW approximate nearest neighbor search.
+---
+title: "HNSW Indexing"
+description: "Scale to large datasets with HNSW approximate nearest neighbor search"
+icon: "chart-network"
+---
 
 Enable HNSW (Hierarchical Navigable Small World) for datasets above roughly 10,000 documents. HNSW provides sub-millisecond queries with more than 95% recall.
 
@@ -161,7 +163,9 @@ await db.addMany(initialDocuments);
 await db.add('new-doc', 'New document text', { /* ... */ });
 ```
 
-> **Tip:** For very large bulk loads (100,000+ documents), consider disabling HNSW during import and enabling it after, then rebuilding the index.
+<Tip>
+For very large bulk loads (100,000+ documents), consider disabling HNSW during import and enabling it after, then rebuilding the index.
+</Tip>
 
 ## Persistence with HNSW
 
@@ -225,6 +229,14 @@ const lowMemory = new VectoriaDB({
 
 ## Related
 
-- [Search](./search.md) - Search options
-- [Persistence](./persistence.md) - Storage adapters
-- [Overview](../overview.md) - Getting started
+<CardGroup cols={3}>
+  <Card title="Search" icon="magnifying-glass" href="/guides/search">
+    Search options
+  </Card>
+  <Card title="Persistence" icon="floppy-disk" href="/guides/persistence">
+    Storage adapters
+  </Card>
+  <Card title="Overview" icon="house" href="/introduction">
+    Getting started
+  </Card>
+</CardGroup>

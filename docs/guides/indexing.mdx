@@ -1,6 +1,8 @@
-# Indexing
-
-Adding and updating documents in VectoriaDB.
+---
+title: "Indexing Documents"
+description: "Adding and updating documents in VectoriaDB"
+icon: "plus"
+---
 
 Add documents with a unique `id`, the natural-language `text` to vectorize, and typed `metadata`.
 
@@ -125,7 +127,9 @@ await toolIndex.updateMany([
 ]);
 ```
 
-> **Tip:** Keep the index current with `updateMetadata`, `update`, or `updateMany`. Metadata-only updates never trigger re-embedding, while text changes re-embed only the affected documents.
+<Tip>
+Keep the index current with `updateMetadata`, `update`, or `updateMany`. Metadata-only updates never trigger re-embedding, while text changes re-embed only the affected documents.
+</Tip>
 
 ## Removing Documents
 
@@ -180,6 +184,14 @@ For large imports, use `addMany` with appropriate `maxBatchSize` to avoid memory
 
 ## Related
 
-- [Search](./search.md) - Querying the index
-- [Persistence](./persistence.md) - Persisting embeddings
-- [Overview](../overview.md) - Getting started
+<CardGroup cols={3}>
+  <Card title="Search" icon="magnifying-glass" href="/guides/search">
+    Querying the index
+  </Card>
+  <Card title="Persistence" icon="floppy-disk" href="/guides/persistence">
+    Persisting embeddings
+  </Card>
+  <Card title="Overview" icon="house" href="/introduction">
+    Getting started
+  </Card>
+</CardGroup>

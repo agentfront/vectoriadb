@@ -1,6 +1,8 @@
-# TF-IDF Variant
-
-Zero-dependency keyword-based search for simple use cases.
+---
+title: "TF-IDF Variant"
+description: "Zero-dependency keyword-based search for simple use cases"
+icon: "text"
+---
 
 For scenarios where ML model downloads aren't acceptable, use the TF-IDF variant. It provides keyword-based search with zero external dependencies.
 
@@ -79,7 +81,9 @@ db.addDocument('doc3', 'Text three', metadata3);
 db.reindex(); // Reindex again
 ```
 
-> **Warning:** Forgetting to call `reindex()` after changes will result in incorrect search results.
+<Warning>
+Forgetting to call `reindex()` after changes will result in incorrect search results.
+</Warning>
 
 ## Configuration Options
 
@@ -176,6 +180,14 @@ const semanticResults = await vectoriaDB.searchByIds(
 
 ## Related
 
-- [Overview](../overview.md) - Getting started
-- [Search](./search.md) - Semantic search options
-- [Persistence](./persistence.md) - Storage adapters
+<CardGroup cols={3}>
+  <Card title="Overview" icon="house" href="/introduction">
+    Getting started
+  </Card>
+  <Card title="Search" icon="magnifying-glass" href="/guides/search">
+    Semantic search options
+  </Card>
+  <Card title="Persistence" icon="floppy-disk" href="/guides/persistence">
+    Storage adapters
+  </Card>
+</CardGroup>

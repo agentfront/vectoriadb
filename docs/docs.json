@@ -1,0 +1,45 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "VectoriaDB",
+  "description": "Lightweight in-memory vector database for semantic search with offline embeddings",
+  "theme": "mint",
+  "colors": {
+    "primary": "#6366F1",
+    "light": "#818CF8",
+    "dark": "#4F46E5"
+  },
+  "search": {
+    "prompt": "Search VectoriaDB docs..."
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/your-org/vectoriadb"
+    }
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting Started",
+        "pages": ["introduction"]
+      },
+      {
+        "group": "Guides",
+        "icon": "book",
+        "pages": [
+          "guides/indexing",
+          "guides/search",
+          "guides/persistence",
+          "guides/hnsw",
+          "guides/tfidf",
+          "guides/tool-discovery"
+        ]
+      },
+      {
+        "group": "Reference",
+        "icon": "code",
+        "pages": ["reference/errors"]
+      }
+    ]
+  }
+}

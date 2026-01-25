@@ -1,6 +1,8 @@
-# Semantic Search
-
-Querying the index with natural language and filters.
+---
+title: "Semantic Search"
+description: "Querying the index with natural language and filters"
+icon: "magnifying-glass"
+---
 
 ## Basic Search
 
@@ -101,7 +103,9 @@ const moderate = await toolIndex.search(query, { threshold: 0.5 });
 const loose = await toolIndex.search(query, { threshold: 0.3 });
 ```
 
-> **Tip:** Start with a lower threshold (0.3-0.4) and increase it if you're getting too many irrelevant results.
+<Tip>
+Start with a lower threshold (0.3-0.4) and increase it if you're getting too many irrelevant results.
+</Tip>
 
 ## Non-Semantic Filtering
 
@@ -156,7 +160,7 @@ const db = new VectoriaDB({
 });
 ```
 
-See [HNSW](./hnsw.md) for details.
+See [HNSW](/guides/hnsw) for details.
 
 ## Error Handling
 
@@ -174,6 +178,14 @@ try {
 
 ## Related
 
-- [Indexing](./indexing.md) - Adding documents
-- [HNSW](./hnsw.md) - Scaling search
-- [Overview](../overview.md) - Getting started
+<CardGroup cols={3}>
+  <Card title="Indexing" icon="plus" href="/guides/indexing">
+    Adding documents
+  </Card>
+  <Card title="HNSW" icon="chart-network" href="/guides/hnsw">
+    Scaling search
+  </Card>
+  <Card title="Overview" icon="house" href="/introduction">
+    Getting started
+  </Card>
+</CardGroup>

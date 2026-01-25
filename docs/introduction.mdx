@@ -1,14 +1,24 @@
-# VectoriaDB Overview
-
-Lightweight in-memory vector database for semantic search with offline embeddings.
+---
+title: "VectoriaDB"
+description: "Lightweight in-memory vector database for semantic search with offline embeddings"
+icon: "database"
+---
 
 VectoriaDB is a production-ready in-memory vector database built on transformers.js. Use it to surface the right tool, prompt, or document snippet from natural-language queries without shipping data to an external service.
 
 ## Features
 
-- **Offline Embeddings** - Embeddings run locally via transformers.js, so your data never leaves the server and you avoid API quotas.
-- **Type-safe Metadata** - Strong generics ensure every document you index keeps the same shape as your metadata interface.
-- **Operational Guardrails** - Built-in rate limits, batch validation, HNSW indexing, and storage adapters keep the index production ready.
+<CardGroup cols={3}>
+  <Card title="Offline Embeddings" icon="microchip">
+    Embeddings run locally via transformers.js, so your data never leaves the server and you avoid API quotas.
+  </Card>
+  <Card title="Type-safe Metadata" icon="shield-check">
+    Strong generics ensure every document you index keeps the same shape as your metadata interface.
+  </Card>
+  <Card title="Operational Guardrails" icon="gauge">
+    Built-in rate limits, batch validation, HNSW indexing, and storage adapters keep the index production ready.
+  </Card>
+</CardGroup>
 
 ## When to Use VectoriaDB
 
@@ -17,7 +27,9 @@ VectoriaDB is a production-ready in-memory vector database built on transformers
 - **Recommendation systems** - Find similar items based on text embeddings
 - **Offline-first applications** - No external API dependencies
 
-> **Note:** The default Xenova `all-MiniLM-L6-v2` model is ~22 MB. The first initialization downloads and caches it under `cacheDir`; subsequent boots reuse the local copy.
+<Note>
+The default Xenova `all-MiniLM-L6-v2` model is ~22 MB. The first initialization downloads and caches it under `cacheDir`; subsequent boots reuse the local copy.
+</Note>
 
 ## Installation
 
@@ -94,8 +106,20 @@ Search returns documents ranked by cosine similarity to your query. You can filt
 
 ## Related Documentation
 
-- [Indexing](./guides/indexing.md) - Adding and updating documents
-- [Search](./guides/search.md) - Querying the index
-- [Persistence](./guides/persistence.md) - Storage adapters
-- [HNSW](./guides/hnsw.md) - Scaling to large datasets
-- [TF-IDF](./guides/tfidf.md) - Zero-dependency alternative
+<CardGroup cols={2}>
+  <Card title="Indexing" icon="plus" href="/guides/indexing">
+    Adding and updating documents
+  </Card>
+  <Card title="Search" icon="magnifying-glass" href="/guides/search">
+    Querying the index
+  </Card>
+  <Card title="Persistence" icon="floppy-disk" href="/guides/persistence">
+    Storage adapters
+  </Card>
+  <Card title="HNSW" icon="chart-network" href="/guides/hnsw">
+    Scaling to large datasets
+  </Card>
+  <Card title="TF-IDF" icon="text" href="/guides/tfidf">
+    Zero-dependency alternative
+  </Card>
+</CardGroup>
