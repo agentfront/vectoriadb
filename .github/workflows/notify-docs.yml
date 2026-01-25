@@ -53,7 +53,7 @@ jobs:
             try {
               await github.rest.repos.createDispatchEvent({
                 owner: 'agentfront',
-                repo: 'agentfront-docs',
+                repo: 'docs',
                 event_type: 'sync-docs',
                 client_payload: {
                   repo: repoName,
