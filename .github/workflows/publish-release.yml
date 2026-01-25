@@ -1,0 +1,228 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Release type"
+        required: true
+        type: choice
+        options:
+          - stable
+          - rc
+          - beta
+        default: stable
+      pre_release_number:
+        description: "Pre-release number (for rc/beta, leave empty for auto-increment)"
+        required: false
+        type: string
+      dry_run:
+        description: "Dry run (skip actual publish)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+concurrency:
+  group: publish-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: release
+    env:
+      NX_DAEMON: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate branch
+        id: context
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Get current branch
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+          # Validate branch is a release branch
+          if [[ ! "$BRANCH" =~ ^release/[0-9]+\.[0-9]+\.x$ ]]; then
+            echo "::error::This workflow must be run from a release/X.Y.x branch. Current branch: $BRANCH"
+            exit 1
+          fi
+
+          # Extract release line (X.Y) from release/X.Y.x
+          RELEASE_LINE=$(echo "$BRANCH" | sed 's/release\/\([0-9]*\.[0-9]*\).*/\1/')
+          echo "release_line=$RELEASE_LINE" >> "$GITHUB_OUTPUT"
+
+          echo "Branch: $BRANCH"
+          echo "Release line: $RELEASE_LINE"
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+          cache: "yarn"
+          registry-url: "https://registry.npmjs.org/"
+
+      - name: Update npm CLI for trusted publishing
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Compute version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          RELEASE_LINE="${{ steps.context.outputs.release_line }}"
+          RELEASE_TYPE="${{ inputs.release_type }}"
+          PRE_RELEASE_NUM="${{ inputs.pre_release_number }}"
+
+          # Fetch all tags
+          git fetch --tags
+
+          # Use compute-next-patch script
+          if [ -n "$PRE_RELEASE_NUM" ]; then
+            VERSION=$(node scripts/compute-next-patch.mjs "$RELEASE_LINE" "$RELEASE_TYPE" "$PRE_RELEASE_NUM")
+          else
+            VERSION=$(node scripts/compute-next-patch.mjs "$RELEASE_LINE" "$RELEASE_TYPE")
+          fi
+
+          # Determine if this is a pre-release
+          IS_PRERELEASE="false"
+          NPM_TAG="latest"
+          if [[ "$VERSION" == *"-rc."* ]]; then
+            IS_PRERELEASE="true"
+            NPM_TAG="rc"
+          elif [[ "$VERSION" == *"-beta."* ]]; then
+            IS_PRERELEASE="true"
+            NPM_TAG="beta"
+          fi
+
+          # Check if tag already exists
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag v$VERSION already exists!"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "release_type=$RELEASE_TYPE" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "npm_tag=$NPM_TAG" >> "$GITHUB_OUTPUT"
+
+          echo "Version: $VERSION"
+          echo "Release type: $RELEASE_TYPE"
+          echo "Is prerelease: $IS_PRERELEASE"
+          echo "NPM tag: $NPM_TAG"
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update package version
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          npx nx release version "${{ steps.version.outputs.version }}" \
+            --projects=vectoriadb --git-tag=false --git-commit=false
+
+      - name: Commit version bump
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "chore(release): bump version to ${{ steps.version.outputs.version }}"
+            git push origin HEAD
+          fi
+
+      - name: Build package
+        run: npx nx run vectoriadb:build
+
+      - name: Publish to npm
+        if: ${{ inputs.dry_run != true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          NPM_TAG="${{ steps.version.outputs.npm_tag }}"
+          DIST_PATH="libs/vectoriadb/dist"
+
+          echo "Publishing vectoriadb from $DIST_PATH with tag $NPM_TAG..."
+          npm publish "$DIST_PATH" --access public --tag "$NPM_TAG"
+
+          echo "Successfully published vectoriadb@${{ steps.version.outputs.version }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create and push git tag
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="v$VERSION"
+          BRANCH="${{ steps.context.outputs.branch }}"
+
+          # Fetch latest to ensure we tag the committed version
+          git fetch origin "$BRANCH"
+          git checkout "$BRANCH"
+          git pull origin "$BRANCH"
+
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+          echo "Created and pushed tag: $TAG"
+
+      - name: Create GitHub Release
+        if: ${{ inputs.dry_run != true }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          prerelease: ${{ steps.version.outputs.is_prerelease }}
+          generate_release_notes: true
+          body: |
+            ## Release v${{ steps.version.outputs.version }}
+
+            **Release type:** ${{ steps.version.outputs.release_type }}
+            **Release line:** ${{ steps.context.outputs.release_line }}.x
+            **Branch:** ${{ steps.context.outputs.branch }}
+
+            ### Installation
+
+            ```bash
+            npm install vectoriadb@${{ steps.version.outputs.version }}
+            ```
+
+            ${{ steps.version.outputs.is_prerelease == 'true' && '> **Note:** This is a pre-release version.' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "## Dry Run Summary" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "> **This was a dry run. No packages were published.**" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## Release Complete" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Property | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|----------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Version | \`${{ steps.version.outputs.version }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Tag | \`v${{ steps.version.outputs.version }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Release type | ${{ steps.version.outputs.release_type }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| NPM tag | \`${{ steps.version.outputs.npm_tag }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Pre-release | ${{ steps.version.outputs.is_prerelease }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Branch | \`${{ steps.context.outputs.branch }}\` |" >> "$GITHUB_STEP_SUMMARY"

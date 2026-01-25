@@ -84,9 +84,8 @@
       "conventionalCommits": false,
       "preVersionCommand": "npx nx run-many -t build",
       "git": {
-        "commit": true,
-        "tag": true,
-        "commitMessage": "chore(release): bump versions\n\nvectoriadb@{version}"
+        "commit": false,
+        "tag": false
       }
     },
     "changelog": {
@@ -94,7 +93,7 @@
       "workspaceChangelog": false
     },
     "releaseTag": {
-      "pattern": "vectoriadb@{version}"
+      "pattern": "v{version}"
     }
   }
 }
