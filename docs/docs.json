@@ -51,13 +51,15 @@
     "dropdowns": [
       {
         "dropdown": "Documentation",
+        "icon": "book-open",
         "groups": [
           {
             "group": "Get Started",
             "pages": [
               "docs/vectoriadb/get-started/welcome",
               "docs/vectoriadb/get-started/installation",
-              "docs/vectoriadb/get-started/quickstart"
+              "docs/vectoriadb/get-started/quickstart",
+              "docs/vectoriadb/updates"
             ]
           },
           {
@@ -107,15 +109,11 @@
           },
           {
             "group": "Alternatives",
-            "pages": [
-              "docs/vectoriadb/guides/alternatives/tfidf"
-            ]
+            "pages": ["docs/vectoriadb/guides/alternatives/tfidf"]
           },
           {
             "group": "Use Cases",
-            "pages": [
-              "docs/vectoriadb/guides/use-cases/tool-discovery"
-            ]
+            "pages": ["docs/vectoriadb/guides/use-cases/tool-discovery"]
           },
           {
             "group": "Deployment",
@@ -141,27 +139,17 @@
           {
             "group": "Troubleshooting",
             "icon": "wrench",
-            "pages": [
-              "docs/vectoriadb/troubleshooting/faq",
-              "docs/vectoriadb/troubleshooting/common-errors"
-            ]
-          },
-          {
-            "group": "Updates",
-            "pages": [
-              "docs/vectoriadb/updates"
-            ]
+            "pages": ["docs/vectoriadb/troubleshooting/faq", "docs/vectoriadb/troubleshooting/common-errors"]
           }
         ]
       },
       {
         "dropdown": "API Reference",
+        "icon": "flask-vial",
         "groups": [
           {
             "group": "Overview",
-            "pages": [
-              "docs/vectoriadb/api-reference/overview"
-            ]
+            "pages": ["docs/vectoriadb/api-reference/overview"]
           },
           {
             "group": "VectoriaDB",
@@ -207,9 +195,7 @@
           {
             "group": "Errors",
             "icon": "triangle-exclamation",
-            "pages": [
-              "docs/vectoriadb/api-reference/errors"
-            ]
+            "pages": ["docs/vectoriadb/api-reference/errors"]
           }
         ]
       }
