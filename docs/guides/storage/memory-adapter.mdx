@@ -1,0 +1,122 @@
+---
+title: "Memory Storage Adapter"
+description: "In-memory storage for development and testing"
+icon: "memory"
+---
+
+Learn about the Memory Storage Adapter - the default adapter for VectoriaDB.
+
+## When to Use
+
+Use `MemoryStorageAdapter` when:
+- Developing and testing locally
+- Re-indexing is fast enough for your use case
+- You don't need persistence between restarts
+
+## Configuration
+
+```ts title="src/storage/memory-adapter.ts"
+import { VectoriaDB, MemoryStorageAdapter } from 'vectoriadb';
+
+const toolIndex = new VectoriaDB<ToolDocument>({
+  storageAdapter: new MemoryStorageAdapter({ namespace: 'tools' }),
+});
+
+// Or simply omit storageAdapter - MemoryStorageAdapter is the default
+const toolIndex = new VectoriaDB<ToolDocument>();
+```
+
+## Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `namespace` | string | `'default'` | Namespace (for consistency with other adapters) |
+
+## Behavior
+
+- **No persistence**: Data is lost on restart
+- **No cache validation**: `hasValidCache()` always returns `false`
+- **Fast**: No I/O overhead
+
+```ts title="src/memory-behavior.ts"
+const db = new VectoriaDB();
+
+await db.initialize();
+await db.addMany(documents);
+
+// This saves to memory (no-op essentially)
+await db.saveToStorage();
+
+// On restart, data is gone
+// Re-indexing is required
+```
+
+## Development Pattern
+
+```ts title="src/development.ts"
+const db = new VectoriaDB<ToolDocument>();
+
+await db.initialize();
+
+// Always re-index in development
+await db.addMany(documents);
+
+console.log(`Indexed ${db.size()} documents`);
+```
+
+## Testing Pattern
+
+```ts title="src/testing.ts"
+import { describe, it, beforeEach } from 'vitest';
+
+describe('Search tests', () => {
+  let db: VectoriaDB<TestDocument>;
+
+  beforeEach(async () => {
+    // Fresh database for each test
+    db = new VectoriaDB();
+    await db.initialize();
+  });
+
+  it('should find documents', async () => {
+    await db.add('test', 'Test document', { id: 'test' });
+    const results = await db.search('test');
+    expect(results).toHaveLength(1);
+  });
+});
+```
+
+## Switching Adapters
+
+Easy to switch between adapters for different environments:
+
+```ts title="src/adapter-switching.ts"
+import { VectoriaDB, FileStorageAdapter, MemoryStorageAdapter } from 'vectoriadb';
+
+function createStorageAdapter() {
+  if (process.env.NODE_ENV === 'production') {
+    return new FileStorageAdapter({
+      cacheDir: './.cache/vectoriadb',
+    });
+  }
+  return new MemoryStorageAdapter();
+}
+
+const db = new VectoriaDB({
+  storageAdapter: createStorageAdapter(),
+});
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Storage Overview" icon="floppy-disk" href="/guides/storage/overview">
+    Storage fundamentals
+  </Card>
+  <Card title="File Adapter" icon="file" href="/guides/storage/file-adapter">
+    Persist to disk
+  </Card>
+  <Card title="Redis Adapter" icon="database" href="/guides/storage/redis-adapter">
+    Multi-pod storage
+  </Card>
+</CardGroup>

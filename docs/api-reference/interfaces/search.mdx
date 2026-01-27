@@ -1,0 +1,165 @@
+---
+title: "Search Interfaces"
+description: "SearchOptions and SearchResult types"
+icon: "magnifying-glass"
+---
+
+Interfaces for search operations in VectoriaDB.
+
+## SearchOptions
+
+Options for search queries.
+
+```ts
+interface SearchOptions<T extends DocumentMetadata = DocumentMetadata> {
+  /**
+   * Maximum number of results to return
+   * @default 10
+   */
+  topK?: number;
+
+  /**
+   * Minimum similarity score threshold (0-1)
+   * @default 0.3
+   */
+  threshold?: number;
+
+  /**
+   * Filter function for metadata
+   * Returns true if document should be included
+   */
+  filter?: FilterFunction<T>;
+
+  /**
+   * Include embedding vector in results
+   * @default false
+   */
+  includeVector?: boolean;
+}
+```
+
+### FilterFunction
+
+```ts
+type FilterFunction<T extends DocumentMetadata> = (metadata: T) => boolean;
+```
+
+### Example
+
+```ts
+const results = await db.search('query', {
+  topK: 5,
+  threshold: 0.5,
+  filter: (metadata) =>
+    metadata.owner === 'billing' &&
+    !metadata.deprecated,
+  includeVector: false,
+});
+```
+
+---
+
+## SearchResult
+
+Result from a search query.
+
+```ts
+interface SearchResult<T extends DocumentMetadata = DocumentMetadata> {
+  /**
+   * Document ID
+   */
+  id: string;
+
+  /**
+   * Document metadata
+   */
+  metadata: T;
+
+  /**
+   * Cosine similarity score (0-1, higher is better)
+   */
+  score: number;
+
+  /**
+   * Original text used for embedding
+   */
+  text: string;
+
+  /**
+   * Embedding vector (only if includeVector: true)
+   */
+  vector?: Float32Array;
+}
+```
+
+### Example
+
+```ts
+const results = await db.search('find users');
+
+for (const result of results) {
+  console.log({
+    id: result.id,
+    score: result.score,
+    title: result.metadata.toolName,
+    text: result.text.substring(0, 50),
+  });
+}
+```
+
+---
+
+## VectoriaStats
+
+Statistics about the database.
+
+```ts
+interface VectoriaStats {
+  /**
+   * Total number of embeddings
+   */
+  totalEmbeddings: number;
+
+  /**
+   * Vector dimensions
+   */
+  dimensions: number;
+
+  /**
+   * Memory usage estimate in bytes
+   */
+  estimatedMemoryBytes: number;
+
+  /**
+   * Embedding model name
+   */
+  modelName: string;
+}
+```
+
+### Example
+
+```ts
+const stats = db.getStats();
+
+console.log({
+  documents: stats.totalEmbeddings,
+  dimensions: stats.dimensions,
+  memoryMB: (stats.estimatedMemoryBytes / 1024 / 1024).toFixed(2),
+  model: stats.modelName,
+});
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="search()" icon="magnifying-glass" href="/api-reference/vectoriadb/search">
+    Search method
+  </Card>
+  <Card title="Documents" icon="file-lines" href="/api-reference/interfaces/documents">
+    Document interfaces
+  </Card>
+  <Card title="Configuration" icon="gear" href="/api-reference/interfaces/config">
+    Config interfaces
+  </Card>
+</CardGroup>

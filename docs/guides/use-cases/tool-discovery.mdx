@@ -4,7 +4,11 @@ description: "Index your tools with VectoriaDB for semantic search and intellige
 icon: "wand-magic-sparkles"
 ---
 
-This guide shows how to use VectoriaDB for always-on semantic tool discovery in your applications.
+Learn how to build an always-on semantic tool discovery system using VectoriaDB.
+
+<Info>
+In this guide you'll build a typed document shape for tools, an indexing routine that stays in sync, semantic queries with filters, persistent caches, and tunable HNSW search.
+</Info>
 
 ## What You'll Build
 
@@ -22,13 +26,23 @@ This guide shows how to use VectoriaDB for always-on semantic tool discovery in 
 
 <Steps>
   <Step title="Install & Initialize VectoriaDB">
-    ```bash
+    <CodeGroup>
+    ```bash npm
     npm install vectoriadb
     ```
 
+    ```bash pnpm
+    pnpm add vectoriadb
+    ```
+
+    ```bash yarn
+    yarn add vectoriadb
+    ```
+    </CodeGroup>
+
     Initialize a singleton database during server startup:
 
-    ```ts
+    ```ts title="src/tool-index.ts"
     import { VectoriaDB, DocumentMetadata } from 'vectoriadb';
 
     interface ToolDocument extends DocumentMetadata {
@@ -52,7 +66,7 @@ This guide shows how to use VectoriaDB for always-on semantic tool discovery in 
   <Step title="Index Your Tools">
     Collect metadata from your tool registry and write it into the database. Each document needs a unique `id`, the natural-language `text` you want to vectorize, and `metadata` that extends `DocumentMetadata`.
 
-    ```ts
+    ```ts title="src/collect-tools.ts"
     interface ToolEntry {
       name: string;
       owner: { id: string };
@@ -96,7 +110,7 @@ This guide shows how to use VectoriaDB for always-on semantic tool discovery in 
   <Step title="Run Semantic Search">
     Query the index anywhere you can run async code:
 
-    ```ts
+    ```ts title="src/search-tools.ts"
     const matches = await toolIndex.search('reset a billing password', {
       topK: 5,
       threshold: 0.45,
@@ -118,7 +132,7 @@ This guide shows how to use VectoriaDB for always-on semantic tool discovery in 
   <Step title="Persist Embeddings">
     Avoid re-indexing on every boot by using storage adapters with a deterministic tools hash:
 
-    ```ts
+    ```ts title="src/warmup.ts"
     import { VectoriaDB, FileStorageAdapter, SerializationUtils } from 'vectoriadb';
 
     export async function warmToolIndex(tools: ToolEntry[]) {
@@ -157,7 +171,7 @@ This guide shows how to use VectoriaDB for always-on semantic tool discovery in 
     - Guard resource usage with `maxDocuments`, `maxDocumentSize`, and `maxBatchSize`.
     - Set a custom `cacheDir` if your runtime has strict filesystem policies.
 
-    ```ts
+    ```ts title="src/scaled-config.ts"
     const toolIndex = new VectoriaDB<ToolDocument>({
       useHNSW: true,
       hnsw: { M: 16, efConstruction: 200, efSearch: 64 },
@@ -170,7 +184,7 @@ This guide shows how to use VectoriaDB for always-on semantic tool discovery in 
 
 ## Complete Example
 
-```ts
+```ts title="src/complete-example.ts"
 import { VectoriaDB, FileStorageAdapter, SerializationUtils, DocumentMetadata } from 'vectoriadb';
 
 interface ToolDocument extends DocumentMetadata {
@@ -230,19 +244,19 @@ for (const result of results) {
 ## Related
 
 <CardGroup cols={2}>
-  <Card title="Overview" icon="house" href="/introduction">
+  <Card title="Welcome" icon="house" href="/get-started/welcome">
     Getting started
   </Card>
-  <Card title="Indexing" icon="plus" href="/guides/indexing">
+  <Card title="Indexing" icon="plus" href="/guides/core/adding-documents">
     Adding documents
   </Card>
-  <Card title="Search" icon="magnifying-glass" href="/guides/search">
+  <Card title="Search" icon="magnifying-glass" href="/guides/search/basic-search">
     Query options
   </Card>
-  <Card title="Persistence" icon="floppy-disk" href="/guides/persistence">
+  <Card title="Storage" icon="floppy-disk" href="/guides/storage/overview">
     Storage adapters
   </Card>
-  <Card title="HNSW" icon="chart-network" href="/guides/hnsw">
+  <Card title="HNSW" icon="chart-network" href="/guides/scaling/hnsw-overview">
     Scaling to large datasets
   </Card>
 </CardGroup>

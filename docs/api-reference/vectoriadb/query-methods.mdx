@@ -1,0 +1,231 @@
+---
+title: "Query Methods"
+description: "Methods for querying documents"
+icon: "database"
+---
+
+Methods for querying and retrieving documents.
+
+## get()
+
+Get a document by ID.
+
+### Signature
+
+```ts
+get(id: string): DocumentEmbedding<T> | undefined
+```
+
+### Return Value
+
+Returns the full document embedding or `undefined` if not found.
+
+```ts
+interface DocumentEmbedding<T> {
+  id: string;
+  vector: Float32Array;
+  metadata: T;
+  text: string;
+  createdAt: Date;
+}
+```
+
+### Example
+
+```ts
+const doc = db.get('users:list');
+
+if (doc) {
+  console.log(doc.metadata.toolName);
+  console.log(doc.text);
+  console.log(doc.createdAt);
+}
+```
+
+---
+
+## has()
+
+Check if a document exists.
+
+### Signature
+
+```ts
+has(id: string): boolean
+```
+
+### Example
+
+```ts
+if (db.has('users:list')) {
+  console.log('Document exists');
+}
+```
+
+---
+
+## filter()
+
+Get documents matching a filter (without semantic ranking).
+
+### Signature
+
+```ts
+filter(filterFn: (metadata: T) => boolean): DocumentEmbedding<T>[]
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `filterFn` | `(metadata: T) => boolean` | Filter predicate |
+
+### Return Value
+
+Returns all matching documents in insertion order (not ranked by similarity).
+
+### Example
+
+```ts
+// Get all billing tools
+const billingTools = db.filter((m) => m.owner === 'billing');
+
+// Get deprecated tools
+const deprecated = db.filter((m) => m.deprecated === true);
+
+// Combine conditions
+const results = db.filter(
+  (m) => m.owner === 'users' && !m.deprecated
+);
+```
+
+<Note>
+Use `search()` with a filter for semantic ranking. Use `filter()` when you only need metadata-based retrieval without similarity scoring.
+</Note>
+
+---
+
+## getAll()
+
+Get all documents.
+
+### Signature
+
+```ts
+getAll(): DocumentEmbedding<T>[]
+```
+
+### Example
+
+```ts
+const allDocs = db.getAll();
+console.log(`Total: ${allDocs.length} documents`);
+```
+
+---
+
+## size()
+
+Get the number of documents.
+
+### Signature
+
+```ts
+size(): number
+```
+
+### Example
+
+```ts
+console.log(`Index contains ${db.size()} documents`);
+```
+
+---
+
+## keys()
+
+Get all document IDs.
+
+### Signature
+
+```ts
+keys(): string[]
+```
+
+### Example
+
+```ts
+const ids = db.keys();
+console.log('Document IDs:', ids);
+```
+
+---
+
+## values()
+
+Get all document embeddings.
+
+### Signature
+
+```ts
+values(): DocumentEmbedding<T>[]
+```
+
+### Example
+
+```ts
+const docs = db.values();
+for (const doc of docs) {
+  console.log(doc.id, doc.metadata);
+}
+```
+
+---
+
+## getStats()
+
+Get database statistics.
+
+### Signature
+
+```ts
+getStats(): VectoriaStats
+```
+
+### Return Value
+
+```ts
+interface VectoriaStats {
+  totalEmbeddings: number;
+  dimensions: number;
+  estimatedMemoryBytes: number;
+  modelName: string;
+}
+```
+
+### Example
+
+```ts
+const stats = db.getStats();
+
+console.log({
+  documents: stats.totalEmbeddings,
+  dimensions: stats.dimensions,
+  memoryMB: (stats.estimatedMemoryBytes / 1024 / 1024).toFixed(2),
+  model: stats.modelName,
+});
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="search()" icon="magnifying-glass" href="/api-reference/vectoriadb/search">
+    Semantic search
+  </Card>
+  <Card title="add()" icon="plus" href="/api-reference/vectoriadb/add">
+    Add documents
+  </Card>
+  <Card title="Documents" icon="file-lines" href="/api-reference/interfaces/documents">
+    Document interfaces
+  </Card>
+</CardGroup>

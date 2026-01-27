@@ -1,0 +1,202 @@
+---
+title: "Health Monitoring"
+description: "Monitor VectoriaDB health and performance"
+icon: "heart-pulse"
+---
+
+Learn how to set up health checks and monitoring for VectoriaDB.
+
+## Health Check Endpoint
+
+```ts title="src/routes/health.ts"
+import { Router } from 'express';
+import { toolIndex } from '../vectoriadb';
+
+const router = Router();
+
+router.get('/health', async (req, res) => {
+  try {
+    const stats = toolIndex.getStats();
+
+    res.json({
+      status: 'healthy',
+      vectoriadb: {
+        documents: toolIndex.size(),
+        dimensions: stats.dimensions,
+        memoryBytes: stats.estimatedMemoryBytes,
+        model: stats.modelName,
+      },
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      error: error.message,
+    });
+  }
+});
+
+router.get('/ready', async (req, res) => {
+  try {
+    // Verify VectoriaDB is initialized and can search
+    await toolIndex.search('health check', { topK: 1 });
+    res.json({ status: 'ready' });
+  } catch (error) {
+    res.status(503).json({
+      status: 'not ready',
+      error: error.message,
+    });
+  }
+});
+
+export default router;
+```
+
+## Metrics Collection
+
+### Basic Metrics
+
+```ts title="src/metrics.ts"
+import { toolIndex } from './vectoriadb';
+
+export function collectMetrics() {
+  const stats = toolIndex.getStats();
+
+  return {
+    // Capacity metrics
+    vectoriadb_documents_total: toolIndex.size(),
+    vectoriadb_memory_bytes: stats.estimatedMemoryBytes,
+    vectoriadb_dimensions: stats.dimensions,
+  };
+}
+```
+
+### Prometheus Metrics
+
+```ts title="src/prometheus-metrics.ts"
+import { Counter, Histogram, Gauge, Registry } from 'prom-client';
+
+const registry = new Registry();
+
+// Search metrics
+const searchCounter = new Counter({
+  name: 'vectoriadb_search_total',
+  help: 'Total number of searches',
+  registers: [registry],
+});
+
+const searchLatency = new Histogram({
+  name: 'vectoriadb_search_latency_seconds',
+  help: 'Search latency in seconds',
+  buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5],
+  registers: [registry],
+});
+
+const documentCount = new Gauge({
+  name: 'vectoriadb_documents_total',
+  help: 'Total documents in index',
+  registers: [registry],
+});
+
+// Instrumented search
+export async function search(query: string, options?: SearchOptions) {
+  const timer = searchLatency.startTimer();
+
+  try {
+    const results = await toolIndex.search(query, options);
+    searchCounter.inc();
+    return results;
+  } finally {
+    timer();
+    documentCount.set(toolIndex.size());
+  }
+}
+
+// Metrics endpoint
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', registry.contentType);
+  res.send(await registry.metrics());
+});
+```
+
+## Logging
+
+```ts title="src/logging.ts"
+import { toolIndex } from './vectoriadb';
+
+// Log search operations
+export async function searchWithLogging(query: string, options?: SearchOptions) {
+  const startTime = Date.now();
+
+  try {
+    const results = await toolIndex.search(query, options);
+
+    console.log({
+      event: 'vectoriadb_search',
+      query: query.substring(0, 50),
+      results: results.length,
+      topScore: results[0]?.score,
+      latencyMs: Date.now() - startTime,
+    });
+
+    return results;
+  } catch (error) {
+    console.error({
+      event: 'vectoriadb_search_error',
+      query: query.substring(0, 50),
+      error: error.message,
+      latencyMs: Date.now() - startTime,
+    });
+    throw error;
+  }
+}
+```
+
+## Docker Health Check
+
+```dockerfile title="Dockerfile"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s \
+  CMD curl -f http://localhost:3000/health || exit 1
+```
+
+## Kubernetes Probes
+
+```yaml title="k8s/deployment.yaml"
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 3000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
+```
+
+## Alerting Recommendations
+
+| Metric | Warning | Critical |
+|--------|---------|----------|
+| Search latency p99 | > 100ms | > 500ms |
+| Error rate | > 1% | > 5% |
+| Memory usage | > 70% | > 90% |
+| Document count | N/A | > maxDocuments |
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Production Config" icon="gear" href="/deployment/production-config">
+    Configuration options
+  </Card>
+  <Card title="Docker" icon="docker" href="/deployment/docker">
+    Container deployment
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/api-reference/errors">
+    Error types
+  </Card>
+</CardGroup>

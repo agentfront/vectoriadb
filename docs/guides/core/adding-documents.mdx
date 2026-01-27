@@ -1,0 +1,139 @@
+---
+title: "Adding Documents"
+description: "Add single and batch documents to VectoriaDB"
+icon: "plus"
+---
+
+Learn how to add documents to your VectoriaDB index.
+
+## Single Document
+
+Add one document at a time:
+
+```ts title="src/add-single.ts"
+await toolIndex.add('users:list', 'List all users with pagination and filtering', {
+  id: 'users:list',
+  toolName: 'list',
+  owner: 'users',
+  tags: ['read', 'user-management'],
+  risk: 'safe',
+});
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | Unique document identifier |
+| `text` | string | Natural language text to embed |
+| `metadata` | T | Type-safe metadata object |
+
+### Validation
+
+- `id` must be unique (throws `DocumentExistsError` if duplicate)
+- `text` cannot be empty or whitespace-only
+- `metadata.id` must match the document `id`
+
+## Batch Indexing
+
+Add multiple documents efficiently:
+
+```ts title="src/batch-index.ts"
+const documents = [
+  {
+    id: 'billing:charge',
+    text: 'Charge a customer payment method',
+    metadata: {
+      id: 'billing:charge',
+      toolName: 'charge',
+      owner: 'billing',
+      tags: ['write', 'payment'],
+      risk: 'destructive',
+    },
+  },
+  {
+    id: 'billing:refund',
+    text: 'Process a refund for a customer',
+    metadata: {
+      id: 'billing:refund',
+      toolName: 'refund',
+      owner: 'billing',
+      tags: ['write', 'payment'],
+      risk: 'destructive',
+    },
+  },
+];
+
+await toolIndex.addMany(documents);
+```
+
+`addMany` validates every document, enforces `maxBatchSize`, and prevents duplicates.
+
+### Batch Validation
+
+Before processing, `addMany` checks:
+- No duplicate IDs within the batch
+- No IDs that already exist in the database
+- All texts are non-empty
+- All texts are within `maxDocumentSize`
+- Batch size doesn't exceed `maxBatchSize`
+
+## Checking for Documents
+
+```ts title="src/check-documents.ts"
+// Check if document exists
+const exists = toolIndex.has('users:list');
+
+// Get document by ID
+const doc = toolIndex.get('users:list');
+if (doc) {
+  console.log(doc.metadata.toolName);
+}
+
+// Get count
+console.log(`Index contains ${toolIndex.size()} documents`);
+```
+
+## Error Handling
+
+```ts title="src/add-error-handling.ts"
+import { DocumentExistsError, DocumentValidationError } from 'vectoriadb';
+
+try {
+  await db.add(id, text, metadata);
+} catch (error) {
+  if (error instanceof DocumentExistsError) {
+    console.log(`Document ${error.documentId} already exists`);
+  } else if (error instanceof DocumentValidationError) {
+    console.log(`Validation failed: ${error.message}`);
+  }
+}
+```
+
+## Performance Tips
+
+<Tip>
+For large imports, use `addMany` instead of calling `add` in a loop. Batch operations are significantly faster due to parallel embedding generation.
+</Tip>
+
+### Recommended Batch Sizes
+
+| Documents | Batch Size | Reasoning |
+|-----------|------------|-----------|
+| < 100 | All at once | Minimal overhead |
+| 100 - 1,000 | 100-500 | Good balance |
+| > 1,000 | 500-1,000 | Avoid memory spikes |
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Indexing Basics" icon="database" href="/guides/core/indexing-basics">
+    Understanding indexing
+  </Card>
+  <Card title="Updating Documents" icon="pen" href="/guides/core/updating-documents">
+    Update existing documents
+  </Card>
+  <Card title="Removing Documents" icon="trash" href="/guides/core/removing-documents">
+    Remove documents
+  </Card>
+</CardGroup>

@@ -1,0 +1,148 @@
+---
+title: "Document Interfaces"
+description: "DocumentMetadata and DocumentEmbedding types"
+icon: "file-lines"
+---
+
+Interfaces for documents in VectoriaDB.
+
+## DocumentMetadata
+
+Base interface for document metadata. Your custom metadata must extend this.
+
+```ts
+interface DocumentMetadata {
+  /**
+   * Unique identifier for the document
+   */
+  id: string;
+
+  /**
+   * Additional metadata fields (flexible)
+   */
+  [key: string]: any;
+}
+```
+
+### Example
+
+```ts
+interface ToolDocument extends DocumentMetadata {
+  toolName: string;
+  owner: string;
+  tags: string[];
+  risk: 'safe' | 'destructive';
+  deprecated?: boolean;
+}
+
+const db = new VectoriaDB<ToolDocument>();
+```
+
+---
+
+## DocumentEmbedding
+
+Stored document with embedding vector.
+
+```ts
+interface DocumentEmbedding<T extends DocumentMetadata = DocumentMetadata> {
+  /**
+   * Unique identifier
+   */
+  id: string;
+
+  /**
+   * Vector representation (384 dimensions by default)
+   */
+  vector: Float32Array;
+
+  /**
+   * Associated metadata
+   */
+  metadata: T;
+
+  /**
+   * Original text used for embedding
+   */
+  text: string;
+
+  /**
+   * Timestamp when created
+   */
+  createdAt: Date;
+}
+```
+
+### Example
+
+```ts
+const doc = db.get('users:list');
+
+if (doc) {
+  console.log(doc.id);          // 'users:list'
+  console.log(doc.text);        // 'List all users...'
+  console.log(doc.metadata);    // { id: 'users:list', toolName: 'list', ... }
+  console.log(doc.createdAt);   // Date object
+  console.log(doc.vector);      // Float32Array(384)
+}
+```
+
+---
+
+## DocumentData
+
+Input format for document embedding generation.
+
+```ts
+interface DocumentData {
+  /**
+   * Main text content
+   */
+  text: string;
+
+  /**
+   * Additional metadata (optional)
+   */
+  metadata?: Record<string, any>;
+}
+```
+
+## Type Safety
+
+VectoriaDB uses TypeScript generics for type-safe metadata:
+
+```ts
+interface MyDocument extends DocumentMetadata {
+  title: string;
+  category: string;
+}
+
+const db = new VectoriaDB<MyDocument>();
+
+// TypeScript enforces metadata shape
+await db.add('id', 'text', {
+  id: 'id',
+  title: 'My Title',
+  category: 'docs',
+  // TypeScript error if you add wrong fields
+});
+
+// Search results have typed metadata
+const results = await db.search('query');
+results[0].metadata.title; // string
+results[0].metadata.category; // string
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Configuration" icon="gear" href="/api-reference/interfaces/config">
+    Config interfaces
+  </Card>
+  <Card title="Search" icon="magnifying-glass" href="/api-reference/interfaces/search">
+    Search interfaces
+  </Card>
+  <Card title="add()" icon="plus" href="/api-reference/vectoriadb/add">
+    Adding documents
+  </Card>
+</CardGroup>

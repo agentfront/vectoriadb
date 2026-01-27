@@ -1,0 +1,153 @@
+---
+title: "update() / updateMetadata()"
+description: "Update documents in the database"
+icon: "pen"
+---
+
+Update document text and/or metadata.
+
+## updateMetadata()
+
+Update metadata without re-embedding. Fast operation.
+
+### Signature
+
+```ts
+updateMetadata(id: string, metadata: T): void
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Document ID |
+| `metadata` | `T` | New metadata object |
+
+### Example
+
+```ts
+db.updateMetadata('users:list', {
+  id: 'users:list',
+  toolName: 'list',
+  owner: 'users',
+  tags: ['read', 'legacy'],
+  risk: 'safe',
+  deprecated: true,
+});
+```
+
+### Errors
+
+| Error | Condition |
+|-------|-----------|
+| `VectoriaNotInitializedError` | Database not initialized |
+| `DocumentNotFoundError` | Document ID doesn't exist |
+
+---
+
+## update()
+
+Update text and/or metadata with smart re-embedding.
+
+### Signature
+
+```ts
+async update(
+  id: string,
+  updates: { text?: string; metadata?: T },
+  options?: { forceReembed?: boolean }
+): Promise<boolean>
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Document ID |
+| `updates.text` | `string` | New text (optional) |
+| `updates.metadata` | `T` | New metadata (optional) |
+| `options.forceReembed` | `boolean` | Force re-embedding even if text unchanged |
+
+### Return Value
+
+Returns `true` if the document was re-embedded, `false` if only metadata was updated.
+
+### Examples
+
+```ts
+// Metadata-only update (no re-embed)
+const reembedded = await db.update('id', {
+  metadata: newMetadata,
+});
+console.log(reembedded); // false
+
+// Text update (triggers re-embed)
+const reembedded = await db.update('id', {
+  text: 'New description',
+  metadata: newMetadata,
+});
+console.log(reembedded); // true
+
+// Force re-embed
+await db.update('id', {
+  text: existingText,
+  metadata: newMetadata,
+}, { forceReembed: true });
+```
+
+### Errors
+
+| Error | Condition |
+|-------|-----------|
+| `VectoriaNotInitializedError` | Database not initialized |
+| `DocumentNotFoundError` | Document ID doesn't exist |
+| `DocumentValidationError` | Empty text or size limit exceeded |
+
+---
+
+## updateMany()
+
+Update multiple documents in batch.
+
+### Signature
+
+```ts
+async updateMany(
+  updates: Array<{ id: string; text?: string; metadata?: T }>,
+  options?: { forceReembed?: boolean }
+): Promise<{ updated: number; reembedded: number }>
+```
+
+### Return Value
+
+```ts
+{
+  updated: number;     // Total documents updated
+  reembedded: number;  // Documents that required re-embedding
+}
+```
+
+### Example
+
+```ts
+const result = await db.updateMany([
+  { id: 'doc1', text: 'New text', metadata: meta1 },
+  { id: 'doc2', metadata: meta2 }, // Metadata only
+]);
+
+console.log(`Updated: ${result.updated}, Re-embedded: ${result.reembedded}`);
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="add()" icon="plus" href="/api-reference/vectoriadb/add">
+    Add documents
+  </Card>
+  <Card title="remove()" icon="trash" href="/api-reference/vectoriadb/remove">
+    Remove documents
+  </Card>
+  <Card title="search()" icon="magnifying-glass" href="/api-reference/vectoriadb/search">
+    Search documents
+  </Card>
+</CardGroup>

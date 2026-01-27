@@ -1,0 +1,133 @@
+---
+title: "remove() / removeMany() / clear()"
+description: "Remove documents from the database"
+icon: "trash"
+---
+
+Remove documents from the vector database.
+
+## remove()
+
+Remove a single document.
+
+### Signature
+
+```ts
+remove(id: string): boolean
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Document ID to remove |
+
+### Return Value
+
+Returns `true` if the document was found and removed, `false` otherwise.
+
+### Example
+
+```ts
+const removed = db.remove('users:list');
+
+if (removed) {
+  console.log('Document removed');
+} else {
+  console.log('Document not found');
+}
+```
+
+---
+
+## removeMany()
+
+Remove multiple documents.
+
+### Signature
+
+```ts
+removeMany(ids: string[]): number
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ids` | `string[]` | Array of document IDs to remove |
+
+### Return Value
+
+Returns the count of documents actually removed.
+
+### Example
+
+```ts
+const removed = db.removeMany(['doc1', 'doc2', 'nonexistent']);
+console.log(`Removed ${removed} documents`); // Removed 2 documents
+```
+
+---
+
+## clear()
+
+Remove all documents from the database.
+
+### Signature
+
+```ts
+clear(): void
+```
+
+### Example
+
+```ts
+db.clear();
+console.log(db.size()); // 0
+```
+
+<Warning>
+`clear()` removes all documents from memory. Use `clearStorage()` to also clear persisted data.
+</Warning>
+
+## HNSW Behavior
+
+When using HNSW indexing, remove operations update the index structure automatically:
+
+```ts
+const db = new VectoriaDB({
+  useHNSW: true,
+});
+
+// Removal updates HNSW graph
+db.remove('doc-id');
+
+// Search immediately reflects the removal
+const results = await db.search('query');
+```
+
+## Storage Considerations
+
+Removing documents doesn't automatically update persistent storage:
+
+```ts
+// Remove documents
+db.removeMany(['doc1', 'doc2']);
+
+// Persist the change
+await db.saveToStorage();
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="add()" icon="plus" href="/api-reference/vectoriadb/add">
+    Add documents
+  </Card>
+  <Card title="update()" icon="pen" href="/api-reference/vectoriadb/update">
+    Update documents
+  </Card>
+  <Card title="clearStorage()" icon="floppy-disk" href="/api-reference/vectoriadb/storage-methods">
+    Clear storage
+  </Card>
+</CardGroup>

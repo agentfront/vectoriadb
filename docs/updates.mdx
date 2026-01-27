@@ -1,0 +1,80 @@
+---
+title: "Updates"
+description: "Changelog and release history for VectoriaDB"
+icon: "clock-rotate-left"
+---
+
+Stay up to date with the latest changes to VectoriaDB.
+
+## v2.0.2 - January 2026
+
+### Security Fixes
+
+- **ReDoS Vulnerability Fixes**: Hardened regex analyzer and namespace sanitizer against ReDoS attacks
+  - Regex vulnerability detection now trims analyzed patterns to 500 characters
+  - Redis namespace sanitization bounds input prior to regex processing
+  - Precompiled `SAFE_PATTERNS` used for deterministic string operations
+
+<Warning>
+If you're using v2.0.0 or v2.0.1, upgrade to v2.0.2 immediately to patch security vulnerabilities.
+</Warning>
+
+---
+
+## v2.0.0 - December 2025
+
+### Breaking Changes
+
+- **Optional Peer Dependencies**: `@huggingface/transformers` is now an optional peer dependency
+  - Must be installed explicitly when using transformer embeddings
+  - Enables smaller bundle sizes when using TF-IDF only
+
+### New Features
+
+- **Lazy Loading**: Transformer embeddings now lazy-load the transformers module
+- **Custom Pipeline Injection**: Added `EmbeddingService.setTransformersModule()` and `clearTransformersModule()` for testing
+
+### Migration Guide
+
+```bash
+# Install the transformers peer dependency
+npm install @huggingface/transformers
+```
+
+If you're using `TFIDFVectoria` only, no changes are needed.
+
+---
+
+## v1.0.0 - November 2025
+
+### Initial Release
+
+VectoriaDB v1.0.0 introduces a production-ready in-memory vector database for semantic search.
+
+#### Features
+
+- **In-Memory Vector Database**: Fast semantic search using cosine similarity
+- **Offline Embeddings**: Local embedding generation via transformers.js
+- **Type-Safe Metadata**: TypeScript generics for compile-time safety
+- **HNSW Indexing**: Sub-millisecond queries for large datasets
+- **Storage Adapters**: File, Redis, and Memory adapters for persistence
+- **Namespace Support**: Multi-tenant isolation
+- **Operational Guardrails**: Rate limits, batch validation, document size limits
+- **Typed Error Classes**: Machine-readable error codes for programmatic handling
+
+---
+
+## GitHub Releases
+
+For detailed release notes and download links, see the [GitHub Releases](https://github.com/agentfront/vectoriadb/releases) page.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/get-started/installation">
+    Get started with VectoriaDB
+  </Card>
+  <Card title="Migration Guide" icon="right-left" href="/troubleshooting/faq">
+    Common migration questions
+  </Card>
+</CardGroup>

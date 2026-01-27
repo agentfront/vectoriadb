@@ -11,7 +11,8 @@
     "test:cached": "nx run-many -t test --outputStyle stream",
     "lint": "nx run-many -t lint --outputStyle stream",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "docs": "cd docs && mint dev --port 4301"
   },
   "private": true,
   "devDependencies": {

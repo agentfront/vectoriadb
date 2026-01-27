@@ -1,0 +1,178 @@
+---
+title: "Express Integration"
+description: "Integrate VectoriaDB into Express.js applications"
+icon: "node-js"
+---
+
+Integrate VectoriaDB into an Express.js application.
+
+## Basic Setup
+
+```ts title="src/app.ts"
+import express from 'express';
+import { VectoriaDB, FileStorageAdapter, DocumentMetadata } from 'vectoriadb';
+
+interface ProductDocument extends DocumentMetadata {
+  name: string;
+  category: string;
+  price: number;
+}
+
+const app = express();
+app.use(express.json());
+
+// Initialize VectoriaDB
+const productIndex = new VectoriaDB<ProductDocument>({
+  storageAdapter: new FileStorageAdapter({
+    cacheDir: './.cache/vectoriadb',
+    namespace: 'products',
+  }),
+  useHNSW: true,
+});
+
+// Startup initialization
+async function startup() {
+  await productIndex.initialize();
+  console.log('VectoriaDB initialized');
+}
+
+// Search endpoint
+app.get('/api/search', async (req, res) => {
+  try {
+    const { q, category, limit = 10 } = req.query;
+
+    if (!q || typeof q !== 'string') {
+      return res.status(400).json({ error: 'Query parameter "q" is required' });
+    }
+
+    const results = await productIndex.search(q, {
+      topK: Number(limit),
+      filter: category ? (m) => m.category === category : undefined,
+    });
+
+    res.json({
+      query: q,
+      results: results.map((r) => ({
+        id: r.id,
+        score: r.score,
+        name: r.metadata.name,
+        category: r.metadata.category,
+        price: r.metadata.price,
+      })),
+    });
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
+// Add product endpoint
+app.post('/api/products', async (req, res) => {
+  try {
+    const { id, name, description, category, price } = req.body;
+
+    await productIndex.add(id, `${name}. ${description}`, {
+      id,
+      name,
+      category,
+      price,
+    });
+
+    await productIndex.saveToStorage();
+
+    res.status(201).json({ id, message: 'Product added' });
+  } catch (error) {
+    console.error('Add product error:', error);
+    res.status(500).json({ error: 'Failed to add product' });
+  }
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    products: productIndex.size(),
+  });
+});
+
+startup().then(() => {
+  app.listen(3000, () => {
+    console.log('Server running on port 3000');
+  });
+});
+```
+
+## Error Handling Middleware
+
+```ts title="src/middleware/error-handler.ts"
+import { VectoriaError, QueryValidationError } from 'vectoriadb';
+
+export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
+  if (err instanceof QueryValidationError) {
+    return res.status(400).json({
+      error: 'Invalid query',
+      code: err.code,
+      message: err.message,
+    });
+  }
+
+  if (err instanceof VectoriaError) {
+    return res.status(500).json({
+      error: 'Database error',
+      code: err.code,
+    });
+  }
+
+  console.error('Unexpected error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+}
+
+// Usage
+app.use(errorHandler);
+```
+
+## Async Error Wrapper
+
+```ts title="src/utils/async-handler.ts"
+type AsyncHandler = (req: Request, res: Response, next: NextFunction) => Promise<any>;
+
+export function asyncHandler(fn: AsyncHandler) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
+
+// Usage
+app.get('/api/search', asyncHandler(async (req, res) => {
+  const results = await productIndex.search(req.query.q as string);
+  res.json(results);
+}));
+```
+
+## Rate Limiting
+
+```ts title="src/middleware/rate-limit.ts"
+import rateLimit from 'express-rate-limit';
+
+const searchLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute
+  message: { error: 'Too many search requests' },
+});
+
+app.use('/api/search', searchLimiter);
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="FrontMCP" icon="wand-magic-sparkles" href="/integrations/frontmcp">
+    FrontMCP integration
+  </Card>
+  <Card title="Next.js" icon="react" href="/integrations/nextjs">
+    Next.js integration
+  </Card>
+  <Card title="Deployment" icon="rocket" href="/deployment/production-config">
+    Production deployment
+  </Card>
+</CardGroup>

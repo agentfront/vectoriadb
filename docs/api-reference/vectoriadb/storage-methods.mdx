@@ -1,0 +1,163 @@
+---
+title: "Storage Methods"
+description: "Methods for persisting and loading embeddings"
+icon: "floppy-disk"
+---
+
+Methods for persisting and loading embeddings from storage.
+
+## saveToStorage()
+
+Save current state to storage.
+
+### Signature
+
+```ts
+async saveToStorage(): Promise<void>
+```
+
+### Description
+
+Persists all embeddings, metadata, and HNSW index structure (if enabled) to the configured storage adapter.
+
+### Example
+
+```ts
+await db.addMany(documents);
+await db.saveToStorage();
+```
+
+### Errors
+
+| Error | Condition |
+|-------|-----------|
+| `VectoriaNotInitializedError` | Database not initialized |
+| `StorageError` | Storage operation failed |
+
+---
+
+## clearStorage()
+
+Clear storage cache.
+
+### Signature
+
+```ts
+async clearStorage(): Promise<void>
+```
+
+### Description
+
+Deletes all persisted embeddings from storage. Does not affect in-memory data.
+
+### Example
+
+```ts
+// Force re-index on next startup
+await db.clearStorage();
+```
+
+---
+
+## close()
+
+Close the database and storage adapter.
+
+### Signature
+
+```ts
+async close(): Promise<void>
+```
+
+### Description
+
+Performs cleanup operations. Call when shutting down the application.
+
+### Example
+
+```ts
+// Graceful shutdown
+await db.saveToStorage();
+await db.close();
+```
+
+---
+
+## isInitialized()
+
+Check if the database is initialized.
+
+### Signature
+
+```ts
+isInitialized(): boolean
+```
+
+### Example
+
+```ts
+if (!db.isInitialized()) {
+  await db.initialize();
+}
+```
+
+## Persistence Pattern
+
+```ts
+import { VectoriaDB, FileStorageAdapter, SerializationUtils } from 'vectoriadb';
+
+async function setupDB(documents: Document[]) {
+  const db = new VectoriaDB({
+    storageAdapter: new FileStorageAdapter({
+      cacheDir: './.cache/vectoriadb',
+    }),
+    toolsHash: SerializationUtils.createToolsHash(documents),
+    version: '1.0.0',
+  });
+
+  await db.initialize();
+
+  // Check if cache was loaded
+  if (db.size() === 0) {
+    await db.addMany(documents);
+    await db.saveToStorage();
+  }
+
+  return db;
+}
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  await db.saveToStorage();
+  await db.close();
+  process.exit(0);
+});
+```
+
+## Error Handling
+
+```ts
+import { StorageError } from 'vectoriadb';
+
+try {
+  await db.saveToStorage();
+} catch (error) {
+  if (error instanceof StorageError) {
+    console.warn('Storage failed, continuing in-memory:', error.message);
+  }
+}
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="FileStorageAdapter" icon="file" href="/api-reference/storage-adapters/file-adapter">
+    File storage
+  </Card>
+  <Card title="RedisStorageAdapter" icon="database" href="/api-reference/storage-adapters/redis-adapter">
+    Redis storage
+  </Card>
+  <Card title="Storage Guide" icon="floppy-disk" href="/guides/storage/overview">
+    Storage guide
+  </Card>
+</CardGroup>

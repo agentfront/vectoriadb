@@ -1,0 +1,186 @@
+---
+title: "Redis Storage Adapter"
+description: "Share embeddings across pods with Redis"
+icon: "database"
+---
+
+Learn how to use the Redis Storage Adapter for multi-pod deployments.
+
+## When to Use
+
+Use `RedisStorageAdapter` when:
+- Running multiple pods/instances
+- You need shared cache across the cluster
+- You want TTL-based cache expiration
+
+## Configuration
+
+```ts title="src/storage/redis-adapter.ts"
+import { VectoriaDB, RedisStorageAdapter } from 'vectoriadb';
+import Redis from 'ioredis';
+
+const redisClient = new Redis();
+
+const toolIndex = new VectoriaDB<ToolDocument>({
+  storageAdapter: new RedisStorageAdapter({
+    client: redisClient,
+    namespace: 'tool-index',
+    ttl: 86400,        // 24 hours (default)
+    keyPrefix: 'vectoriadb',
+  }),
+});
+
+await toolIndex.initialize();
+
+if (toolIndex.size() === 0) {
+  await toolIndex.addMany(documents);
+  await toolIndex.saveToStorage();
+}
+```
+
+## Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `client` | Redis | required | ioredis client instance |
+| `namespace` | string | `'default'` | Namespace for isolation |
+| `ttl` | number | `86400` | Time-to-live in seconds |
+| `keyPrefix` | string | `'vectoriadb'` | Redis key prefix |
+
+## Redis Client
+
+Any Redis client with this interface works:
+
+```ts title="src/redis-interface.ts"
+interface RedisClient {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string): Promise<void | string>;
+  setex(key: string, seconds: number, value: string): Promise<void | string>;
+  del(key: string): Promise<number>;
+  ping(): Promise<string>;
+  quit(): Promise<void>;
+}
+```
+
+### With ioredis
+
+```ts title="src/ioredis.ts"
+import Redis from 'ioredis';
+
+const client = new Redis({
+  host: 'localhost',
+  port: 6379,
+  password: process.env.REDIS_PASSWORD,
+});
+
+const adapter = new RedisStorageAdapter({ client });
+```
+
+### With redis
+
+```ts title="src/node-redis.ts"
+import { createClient } from 'redis';
+
+const client = createClient({ url: 'redis://localhost:6379' });
+await client.connect();
+
+const adapter = new RedisStorageAdapter({ client });
+```
+
+## TTL Configuration
+
+Set TTL based on your cache invalidation strategy:
+
+```ts title="src/redis-ttl.ts"
+const adapter = new RedisStorageAdapter({
+  client: redisClient,
+  ttl: 3600,     // 1 hour - for frequently changing data
+  // ttl: 86400  // 24 hours - default
+  // ttl: 604800 // 7 days - for stable data
+});
+```
+
+<Tip>
+Set TTL longer than your typical deployment cycle. The cache will be invalidated by `toolsHash` changes anyway.
+</Tip>
+
+## Redis Key Structure
+
+The adapter creates keys like:
+
+```
+vectoriadb:tool-index
+```
+
+Format: `{keyPrefix}:{namespace}`
+
+## Multi-Tenant Setup
+
+```ts title="src/redis-multi-tenant.ts"
+function createTenantDB(tenantId: string) {
+  return new VectoriaDB({
+    storageAdapter: new RedisStorageAdapter({
+      client: redisClient,
+      namespace: `tenant-${tenantId}`,
+      keyPrefix: 'vectoriadb',
+    }),
+  });
+}
+
+const tenantA = createTenantDB('a');
+const tenantB = createTenantDB('b');
+```
+
+## Connection Handling
+
+The adapter doesn't manage the Redis connection lifecycle:
+
+```ts title="src/redis-lifecycle.ts"
+// You manage the client
+const client = new Redis();
+
+const db = new VectoriaDB({
+  storageAdapter: new RedisStorageAdapter({ client }),
+});
+
+await db.initialize();
+
+// ... use db ...
+
+// Close when done
+await db.close();
+await client.quit();
+```
+
+## Error Handling
+
+```ts title="src/redis-errors.ts"
+import { StorageError } from 'vectoriadb';
+
+try {
+  await db.saveToStorage();
+} catch (error) {
+  if (error instanceof StorageError) {
+    console.error('Redis error:', error.message);
+
+    // Common issues:
+    // - Connection refused
+    // - Authentication failed
+    // - Memory limit exceeded
+  }
+}
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Storage Overview" icon="floppy-disk" href="/guides/storage/overview">
+    Storage fundamentals
+  </Card>
+  <Card title="File Adapter" icon="file" href="/guides/storage/file-adapter">
+    Single-server storage
+  </Card>
+  <Card title="Deployment" icon="rocket" href="/deployment/docker">
+    Docker setup
+  </Card>
+</CardGroup>

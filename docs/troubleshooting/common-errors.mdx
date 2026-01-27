@@ -1,0 +1,337 @@
+---
+title: "Common Errors"
+description: "Solutions for common VectoriaDB errors"
+icon: "triangle-exclamation"
+---
+
+This page covers common errors and their solutions.
+
+<Info>
+All VectoriaDB errors extend `VectoriaError` and include a machine-readable `code` property for programmatic handling.
+</Info>
+
+## VectoriaNotInitializedError
+
+**Code:** `NOT_INITIALIZED`
+
+### Cause
+
+You attempted to use VectoriaDB before calling `initialize()`.
+
+### Example
+
+```ts title="src/error-not-initialized.ts"
+const db = new VectoriaDB();
+await db.add('id', 'text', metadata); // Error: NOT_INITIALIZED
+```
+
+### Solution
+
+Always call `initialize()` before any operation:
+
+```ts title="src/fix-not-initialized.ts"
+const db = new VectoriaDB();
+await db.initialize(); // Required!
+await db.add('id', 'text', metadata); // Now works
+```
+
+<Tip>
+`initialize()` is idempotent - calling it multiple times is safe and only runs once.
+</Tip>
+
+---
+
+## ConfigurationError
+
+**Code:** `CONFIGURATION_ERROR`
+
+### Cause
+
+Invalid configuration options were passed to the constructor.
+
+### Example
+
+```ts title="src/error-configuration.ts"
+const db = new VectoriaDB({
+  maxDocuments: -1, // Error: Invalid value
+});
+```
+
+### Solution
+
+Check that all configuration values are valid:
+
+```ts title="src/fix-configuration.ts"
+const db = new VectoriaDB({
+  maxDocuments: 100000,    // Must be positive
+  maxBatchSize: 1000,      // Must be positive
+  defaultTopK: 10,         // Must be positive
+  defaultSimilarityThreshold: 0.3, // Must be 0-1
+});
+```
+
+---
+
+## DocumentValidationError
+
+**Code:** `DOCUMENT_VALIDATION_ERROR`
+
+### Cause
+
+A document failed validation. Common issues:
+- Missing required fields (`id`, `text`, `metadata`)
+- Empty `id` or `text`
+- Text exceeds `maxDocumentSize`
+- Invalid metadata structure
+
+### Example
+
+```ts title="src/error-validation.ts"
+await db.add('', 'text', metadata); // Error: Empty ID
+await db.add('id', '', metadata);   // Error: Empty text
+```
+
+### Solution
+
+Ensure all documents have valid data:
+
+```ts title="src/fix-validation.ts"
+// Validate before adding
+function validateDocument(doc: { id: string; text: string }) {
+  if (!doc.id?.trim()) throw new Error('ID required');
+  if (!doc.text?.trim()) throw new Error('Text required');
+  if (doc.text.length > 1000000) throw new Error('Text too long');
+}
+
+validateDocument(doc);
+await db.add(doc.id, doc.text, doc.metadata);
+```
+
+---
+
+## DocumentExistsError
+
+**Code:** `DOCUMENT_EXISTS`
+
+### Cause
+
+You attempted to add a document with an ID that already exists.
+
+### Example
+
+```ts title="src/error-exists.ts"
+await db.add('user:1', 'First user', metadata);
+await db.add('user:1', 'Another user', metadata); // Error: DOCUMENT_EXISTS
+```
+
+### Solution
+
+Check if document exists before adding, or use `update()`:
+
+```ts title="src/fix-exists.ts"
+// Option 1: Check first
+if (!db.has('user:1')) {
+  await db.add('user:1', 'User text', metadata);
+}
+
+// Option 2: Use update for upsert behavior
+await db.update('user:1', {
+  text: 'Updated text',
+  metadata,
+});
+```
+
+---
+
+## DuplicateDocumentError
+
+**Code:** `DUPLICATE_DOCUMENT`
+
+### Cause
+
+A batch operation contained duplicate document IDs.
+
+### Example
+
+```ts title="src/error-duplicate.ts"
+await db.addMany([
+  { id: 'doc1', text: 'Text 1', metadata: m1 },
+  { id: 'doc1', text: 'Text 2', metadata: m2 }, // Error: Duplicate ID
+]);
+```
+
+### Solution
+
+Deduplicate documents before batch operations:
+
+```ts title="src/fix-duplicate.ts"
+function deduplicateById<T extends { id: string }>(docs: T[]): T[] {
+  const seen = new Set<string>();
+  return docs.filter((doc) => {
+    if (seen.has(doc.id)) return false;
+    seen.add(doc.id);
+    return true;
+  });
+}
+
+const uniqueDocs = deduplicateById(documents);
+await db.addMany(uniqueDocs);
+```
+
+---
+
+## QueryValidationError
+
+**Code:** `QUERY_VALIDATION_ERROR`
+
+### Cause
+
+Invalid search parameters were provided.
+
+### Example
+
+```ts title="src/error-query.ts"
+await db.search(query, { topK: -1 });     // Error: Invalid topK
+await db.search(query, { threshold: 2 }); // Error: Invalid threshold
+await db.search('');                       // Error: Empty query
+```
+
+### Solution
+
+Validate search options:
+
+```ts title="src/fix-query.ts"
+await db.search(query, {
+  topK: Math.max(1, topK),           // Must be positive
+  threshold: Math.min(1, Math.max(0, threshold)), // Must be 0-1
+});
+```
+
+---
+
+## StorageError
+
+**Code:** `STORAGE_ERROR`
+
+### Cause
+
+A storage operation failed. Common issues:
+- Disk full or no write permission
+- Redis connection failed
+- Corrupted cache file
+
+### Example
+
+```ts title="src/error-storage.ts"
+await db.saveToStorage(); // Error: Permission denied
+```
+
+### Solution
+
+Handle storage errors gracefully:
+
+```ts title="src/fix-storage.ts"
+import { StorageError } from 'vectoriadb';
+
+try {
+  await db.saveToStorage();
+} catch (error) {
+  if (error instanceof StorageError) {
+    console.warn('Storage failed, continuing in-memory only');
+    // Application continues without persistence
+  } else {
+    throw error;
+  }
+}
+```
+
+---
+
+## EmbeddingError
+
+**Code:** `EMBEDDING_ERROR`
+
+### Cause
+
+The embedding model failed to generate embeddings. Common issues:
+- Model not loaded (not initialized)
+- Out of memory
+- Invalid input text
+
+### Example
+
+```ts title="src/error-embedding.ts"
+// Very long text might cause memory issues
+await db.add('id', veryLongText, metadata); // Error: EMBEDDING_ERROR
+```
+
+### Solution
+
+Handle embedding errors and validate input:
+
+```ts title="src/fix-embedding.ts"
+import { EmbeddingError } from 'vectoriadb';
+
+try {
+  await db.add('id', text, metadata);
+} catch (error) {
+  if (error instanceof EmbeddingError) {
+    console.error('Embedding failed:', error.message);
+    // Log for debugging, skip document
+  } else {
+    throw error;
+  }
+}
+```
+
+---
+
+## Error Recovery Pattern
+
+Use this pattern for robust error handling:
+
+```ts title="src/error-recovery.ts"
+import {
+  VectoriaError,
+  VectoriaNotInitializedError,
+  DocumentValidationError,
+  StorageError,
+} from 'vectoriadb';
+
+async function safeOperation() {
+  try {
+    await db.addMany(documents);
+    await db.saveToStorage();
+  } catch (error) {
+    if (error instanceof VectoriaNotInitializedError) {
+      await db.initialize();
+      return safeOperation(); // Retry
+    }
+
+    if (error instanceof DocumentValidationError) {
+      console.warn(`Skipping invalid document: ${error.documentId}`);
+      const valid = documents.filter((d) => d.id !== error.documentId);
+      await db.addMany(valid);
+      return;
+    }
+
+    if (error instanceof StorageError) {
+      console.warn('Storage unavailable, continuing without persistence');
+      return;
+    }
+
+    throw error; // Re-throw unexpected errors
+  }
+}
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="FAQ" icon="circle-question" href="/troubleshooting/faq">
+    Frequently asked questions
+  </Card>
+  <Card title="Error Handling" icon="code" href="/reference/errors">
+    Programmatic error handling
+  </Card>
+</CardGroup>

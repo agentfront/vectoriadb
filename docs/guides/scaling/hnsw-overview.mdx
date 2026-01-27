@@ -1,0 +1,112 @@
+---
+title: "HNSW Overview"
+description: "Scale to large datasets with HNSW indexing"
+icon: "chart-network"
+---
+
+Learn how to scale VectoriaDB to large datasets using HNSW (Hierarchical Navigable Small World) indexing.
+
+## When to Use HNSW
+
+| Documents | Recommendation |
+|-----------|----------------|
+| < 1,000 | Brute-force (default) |
+| 1,000 - 10,000 | Either works |
+| > 10,000 | Use HNSW |
+| > 100,000 | HNSW required |
+
+## Basic Configuration
+
+```ts title="src/hnsw-config.ts"
+const toolIndex = new VectoriaDB<ToolDocument>({
+  useHNSW: true,
+  hnsw: { M: 16, efConstruction: 200, efSearch: 64 },
+  maxDocuments: 150_000,
+  maxBatchSize: 2_000,
+});
+```
+
+## Performance Comparison
+
+### Search Time
+
+| Documents | Brute-force | HNSW (ef=50) |
+|-----------|-------------|--------------|
+| 10,000 | ~50ms | ~1ms |
+| 50,000 | ~250ms | ~1ms |
+| 100,000 | ~500ms | ~2ms |
+
+### Build Time
+
+| Documents | M=16, ef=200 |
+|-----------|--------------|
+| 10,000 | ~5 seconds |
+| 50,000 | ~30 seconds |
+| 100,000 | ~2 minutes |
+
+### Memory Usage
+
+HNSW adds approximately 50-100 bytes per document for graph connections on top of the embedding storage.
+
+## How HNSW Works
+
+HNSW creates a multi-layer graph structure:
+
+1. **Hierarchical layers**: Upper layers have fewer nodes for fast navigation
+2. **Navigable small world**: Nodes connect to similar nodes nearby
+3. **Approximate search**: Trades exact results for speed (95%+ recall)
+
+## Incremental Updates
+
+HNSW supports incremental updates without full rebuilds:
+
+```ts title="src/hnsw-incremental.ts"
+const db = new VectoriaDB({
+  useHNSW: true,
+});
+
+await db.initialize();
+
+// Initial bulk load
+await db.addMany(initialDocuments);
+
+// Later additions - HNSW index updated incrementally
+await db.add('new-doc', 'New document text', { /* ... */ });
+```
+
+<Tip>
+For very large bulk loads (100,000+ documents), consider disabling HNSW during import and enabling it after, then rebuilding the index.
+</Tip>
+
+## Persistence with HNSW
+
+The HNSW index structure is persisted along with embeddings:
+
+```ts title="src/hnsw-persistence.ts"
+const db = new VectoriaDB({
+  useHNSW: true,
+  storageAdapter: new FileStorageAdapter({
+    cacheDir: './.cache/vectoriadb',
+  }),
+});
+
+await db.initialize();
+await db.addMany(documents);
+await db.saveToStorage(); // Saves HNSW structure too
+
+// On restart, HNSW index is restored from storage
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="HNSW Configuration" icon="gear" href="/guides/scaling/hnsw-configuration">
+    Parameter reference
+  </Card>
+  <Card title="HNSW Tuning" icon="sliders" href="/guides/scaling/hnsw-tuning">
+    Optimize for your use case
+  </Card>
+  <Card title="Search Performance" icon="gauge" href="/guides/search/performance">
+    General performance tips
+  </Card>
+</CardGroup>

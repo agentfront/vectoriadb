@@ -1,0 +1,143 @@
+---
+title: "Storage Interfaces"
+description: "Storage adapter interfaces and types"
+icon: "floppy-disk"
+---
+
+Interfaces for storage adapters in VectoriaDB.
+
+## StorageMetadata
+
+Metadata stored with embeddings for cache validation.
+
+```ts
+interface StorageMetadata {
+  /**
+   * VectoriaDB version
+   */
+  version: string;
+
+  /**
+   * Hash of tools/documents schema
+   */
+  toolsHash: string;
+
+  /**
+   * Timestamp when stored
+   */
+  timestamp: number;
+
+  /**
+   * Embedding model name
+   */
+  modelName: string;
+
+  /**
+   * Vector dimensions
+   */
+  dimensions: number;
+
+  /**
+   * Number of documents stored
+   */
+  documentCount: number;
+}
+```
+
+---
+
+## StoredData
+
+Data structure for persisted embeddings.
+
+```ts
+interface StoredData<T extends DocumentMetadata = DocumentMetadata> {
+  metadata: StorageMetadata;
+  embeddings: SerializedEmbedding<T>[];
+}
+```
+
+---
+
+## SerializedEmbedding
+
+Serialized form of document embedding (JSON-compatible).
+
+```ts
+interface SerializedEmbedding<T extends DocumentMetadata = DocumentMetadata> {
+  id: string;
+  vector: number[]; // Float32Array serialized
+  metadata: T;
+  text: string;
+  createdAt: string; // ISO date string
+}
+```
+
+---
+
+## BaseStorageAdapter
+
+Abstract base class for storage adapters.
+
+```ts
+abstract class BaseStorageAdapter<T extends DocumentMetadata> {
+  protected config: Required<StorageAdapterConfig>;
+
+  constructor(config?: StorageAdapterConfig);
+
+  abstract initialize(): Promise<void>;
+  abstract load(): Promise<StoredData<T> | null>;
+  abstract save(data: StoredData<T>): Promise<void>;
+  abstract clear(): Promise<void>;
+  abstract close(): Promise<void>;
+
+  async hasValidCache(metadata: StorageMetadata): Promise<boolean>;
+  protected safeJsonParse<R>(content: string): R | null;
+  protected safeJsonStringify(data: unknown, pretty?: boolean): string | null;
+}
+```
+
+## Implementing Custom Adapters
+
+```ts
+import { BaseStorageAdapter, StoredData, StorageMetadata } from 'vectoriadb';
+
+class CustomStorageAdapter<T extends DocumentMetadata>
+  extends BaseStorageAdapter<T> {
+
+  async initialize(): Promise<void> {
+    // Setup connection
+  }
+
+  async load(): Promise<StoredData<T> | null> {
+    // Load from storage
+    return null;
+  }
+
+  async save(data: StoredData<T>): Promise<void> {
+    // Save to storage
+  }
+
+  async clear(): Promise<void> {
+    // Clear storage
+  }
+
+  async close(): Promise<void> {
+    // Cleanup
+  }
+}
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="FileStorageAdapter" icon="file" href="/api-reference/storage-adapters/file-adapter">
+    File storage
+  </Card>
+  <Card title="RedisStorageAdapter" icon="database" href="/api-reference/storage-adapters/redis-adapter">
+    Redis storage
+  </Card>
+  <Card title="Storage Guide" icon="floppy-disk" href="/guides/storage/overview">
+    Storage guide
+  </Card>
+</CardGroup>

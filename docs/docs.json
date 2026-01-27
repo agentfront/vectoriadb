@@ -2,43 +2,216 @@
   "$schema": "https://mintlify.com/docs.json",
   "name": "VectoriaDB",
   "description": "Lightweight in-memory vector database for semantic search with offline embeddings",
+  "appearance": {
+    "default": "system",
+    "strict": false
+  },
   "theme": "mint",
   "colors": {
-    "primary": "#6366F1",
-    "light": "#818CF8",
-    "dark": "#4F46E5"
+    "primary": "#e8a045",
+    "light": "#f0b865",
+    "dark": "#c78935"
+  },
+  "metadata": {
+    "og:site_name": "VectoriaDB Documentation",
+    "og:locale": "en_US"
+  },
+  "navbar": {
+    "links": [
+      {
+        "href": "https://github.com/agentfront/vectoriadb",
+        "icon": "github",
+        "label": "GitHub"
+      }
+    ],
+    "primary": {
+      "href": "https://github.com/agentfront/vectoriadb",
+      "type": "github"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/agentfront/vectoriadb",
+      "x": "https://x.com/agentfront"
+    }
   },
   "search": {
     "prompt": "Search VectoriaDB docs..."
   },
-  "navbar": {
-    "primary": {
-      "type": "github",
-      "href": "https://github.com/your-org/vectoriadb"
+  "styling": {
+    "codeblocks": {
+      "theme": {
+        "dark": "dark-plus",
+        "light": "snazzy-light"
+      }
     }
   },
+  "versions": ["v2.0"],
   "navigation": {
-    "groups": [
+    "dropdowns": [
       {
-        "group": "Getting Started",
-        "pages": ["introduction"]
-      },
-      {
-        "group": "Guides",
-        "icon": "book",
-        "pages": [
-          "guides/indexing",
-          "guides/search",
-          "guides/persistence",
-          "guides/hnsw",
-          "guides/tfidf",
-          "guides/tool-discovery"
+        "dropdown": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "get-started/welcome",
+              "get-started/installation",
+              "get-started/quickstart"
+            ]
+          },
+          {
+            "group": "Core Guides",
+            "pages": [
+              {
+                "group": "Document Operations",
+                "icon": "database",
+                "pages": [
+                  "guides/core/indexing-basics",
+                  "guides/core/adding-documents",
+                  "guides/core/updating-documents",
+                  "guides/core/removing-documents"
+                ]
+              },
+              {
+                "group": "Search",
+                "icon": "magnifying-glass",
+                "pages": [
+                  "guides/search/basic-search",
+                  "guides/search/filtering",
+                  "guides/search/similarity-thresholds",
+                  "guides/search/performance"
+                ]
+              },
+              {
+                "group": "Storage",
+                "icon": "floppy-disk",
+                "pages": [
+                  "guides/storage/overview",
+                  "guides/storage/file-adapter",
+                  "guides/storage/redis-adapter",
+                  "guides/storage/memory-adapter",
+                  "guides/storage/cache-invalidation"
+                ]
+              },
+              {
+                "group": "Scaling",
+                "icon": "chart-network",
+                "pages": [
+                  "guides/scaling/hnsw-overview",
+                  "guides/scaling/hnsw-configuration",
+                  "guides/scaling/hnsw-tuning"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Alternatives",
+            "pages": [
+              "guides/alternatives/tfidf"
+            ]
+          },
+          {
+            "group": "Use Cases",
+            "pages": [
+              "guides/use-cases/tool-discovery"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "icon": "rocket",
+            "pages": [
+              "deployment/production-config",
+              "deployment/docker",
+              "deployment/environment-variables",
+              "deployment/health-monitoring"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "icon": "puzzle-piece",
+            "pages": [
+              "integrations/overview",
+              "integrations/frontmcp",
+              "integrations/enclave",
+              "integrations/express",
+              "integrations/nextjs"
+            ]
+          },
+          {
+            "group": "Troubleshooting",
+            "icon": "wrench",
+            "pages": [
+              "troubleshooting/faq",
+              "troubleshooting/common-errors"
+            ]
+          },
+          {
+            "group": "Updates",
+            "pages": [
+              "updates"
+            ]
+          }
         ]
       },
       {
-        "group": "Reference",
-        "icon": "code",
-        "pages": ["reference/errors"]
+        "dropdown": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/overview"
+            ]
+          },
+          {
+            "group": "VectoriaDB",
+            "icon": "database",
+            "pages": [
+              "api-reference/vectoriadb/constructor",
+              "api-reference/vectoriadb/initialize",
+              "api-reference/vectoriadb/add",
+              "api-reference/vectoriadb/search",
+              "api-reference/vectoriadb/update",
+              "api-reference/vectoriadb/remove",
+              "api-reference/vectoriadb/query-methods",
+              "api-reference/vectoriadb/storage-methods"
+            ]
+          },
+          {
+            "group": "TFIDFVectoria",
+            "icon": "text",
+            "pages": [
+              "api-reference/tfidf-vectoria/constructor",
+              "api-reference/tfidf-vectoria/methods"
+            ]
+          },
+          {
+            "group": "Storage Adapters",
+            "icon": "floppy-disk",
+            "pages": [
+              "api-reference/storage-adapters/file-adapter",
+              "api-reference/storage-adapters/redis-adapter",
+              "api-reference/storage-adapters/memory-adapter"
+            ]
+          },
+          {
+            "group": "Interfaces",
+            "icon": "code",
+            "pages": [
+              "api-reference/interfaces/config",
+              "api-reference/interfaces/documents",
+              "api-reference/interfaces/search",
+              "api-reference/interfaces/storage"
+            ]
+          },
+          {
+            "group": "Errors",
+            "icon": "triangle-exclamation",
+            "pages": [
+              "api-reference/errors"
+            ]
+          }
+        ]
       }
     ]
   }

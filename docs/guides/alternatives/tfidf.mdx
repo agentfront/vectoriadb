@@ -4,7 +4,11 @@ description: "Zero-dependency keyword-based search for simple use cases"
 icon: "text"
 ---
 
-For scenarios where ML model downloads aren't acceptable, use the TF-IDF variant. It provides keyword-based search with zero external dependencies.
+Learn how to use the TF-IDF variant for keyword-based search without external dependencies.
+
+<Info>
+In this guide you'll learn when to use TF-IDF instead of semantic search, how to configure and query it, and understand its limitations.
+</Info>
 
 ## When to Use TF-IDF
 
@@ -18,7 +22,7 @@ For scenarios where ML model downloads aren't acceptable, use the TF-IDF variant
 
 ## Basic Usage
 
-```ts
+```ts title="src/tfidf-basic.ts"
 import { TFIDFVectoria, DocumentMetadata } from 'vectoriadb';
 
 interface ToolDocument extends DocumentMetadata {
@@ -65,7 +69,7 @@ const results = db.search('authentication', { topK: 5 });
 
 TF-IDF requires reindexing after document changes to update IDF (Inverse Document Frequency) values:
 
-```ts
+```ts title="src/tfidf-reindex.ts"
 // Add documents
 db.addDocument('doc1', 'Text one', metadata1);
 db.addDocument('doc2', 'Text two', metadata2);
@@ -87,7 +91,7 @@ Forgetting to call `reindex()` after changes will result in incorrect search res
 
 ## Configuration Options
 
-```ts
+```ts title="src/tfidf-config.ts"
 const db = new TFIDFVectoria<ToolDocument>({
   defaultSimilarityThreshold: 0.0,  // Minimum score (0-1)
   defaultTopK: 10,                  // Default results limit
@@ -96,7 +100,7 @@ const db = new TFIDFVectoria<ToolDocument>({
 
 ## Search Options
 
-```ts
+```ts title="src/tfidf-search.ts"
 const results = db.search('query', {
   topK: 5,          // Maximum results
   threshold: 0.1,   // Minimum score
@@ -119,7 +123,7 @@ This means:
 
 ## Example: Tool Discovery
 
-```ts
+```ts title="src/tfidf-tool-discovery.ts"
 import { TFIDFVectoria } from 'vectoriadb';
 
 interface Tool {
@@ -167,7 +171,7 @@ const results = toolSearch.search('create account');
 
 For best of both worlds, you can use TF-IDF as a pre-filter before semantic search:
 
-```ts
+```ts title="src/tfidf-hybrid.ts"
 // Fast TF-IDF pre-filter
 const tfidfResults = tfidfIndex.search(query, { topK: 100, threshold: 0.1 });
 
@@ -181,13 +185,13 @@ const semanticResults = await vectoriaDB.searchByIds(
 ## Related
 
 <CardGroup cols={3}>
-  <Card title="Overview" icon="house" href="/introduction">
+  <Card title="Welcome" icon="house" href="/get-started/welcome">
     Getting started
   </Card>
-  <Card title="Search" icon="magnifying-glass" href="/guides/search">
+  <Card title="Search" icon="magnifying-glass" href="/guides/search/basic-search">
     Semantic search options
   </Card>
-  <Card title="Persistence" icon="floppy-disk" href="/guides/persistence">
+  <Card title="Storage" icon="floppy-disk" href="/guides/storage/overview">
     Storage adapters
   </Card>
 </CardGroup>

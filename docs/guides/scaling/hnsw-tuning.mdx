@@ -1,0 +1,165 @@
+---
+title: "HNSW Tuning"
+description: "Tune HNSW parameters for your specific use case"
+icon: "sliders"
+---
+
+Learn how to tune HNSW parameters for different scenarios.
+
+## Tuning Guidelines
+
+### For Real-Time Search Applications
+
+Prioritize low latency over maximum recall:
+
+```ts title="src/hnsw-realtime.ts"
+const realtime = new VectoriaDB({
+  useHNSW: true,
+  hnsw: {
+    M: 16,
+    efConstruction: 200,
+    efSearch: 40, // Low for speed
+  },
+});
+```
+
+### For High-Precision Applications
+
+Prioritize accuracy over speed:
+
+```ts title="src/hnsw-precision.ts"
+const precision = new VectoriaDB({
+  useHNSW: true,
+  hnsw: {
+    M: 24,
+    efConstruction: 400,
+    efSearch: 200, // High for accuracy
+  },
+});
+```
+
+### For Memory-Constrained Environments
+
+Minimize memory footprint:
+
+```ts title="src/hnsw-low-memory.ts"
+const lowMemory = new VectoriaDB({
+  useHNSW: true,
+  hnsw: {
+    M: 8,  // Lower M uses less memory
+    efConstruction: 100,
+    efSearch: 30,
+  },
+});
+```
+
+## Dynamic efSearch
+
+Adjust efSearch per-query based on requirements:
+
+```ts title="src/dynamic-ef-search.ts"
+async function search(query: string, precision: 'low' | 'medium' | 'high') {
+  const efSearch = {
+    low: 20,
+    medium: 50,
+    high: 200,
+  }[precision];
+
+  return db.search(query, {
+    topK: 10,
+    efSearch,
+  });
+}
+
+// Fast search for autocomplete
+const suggestions = await search(input, 'low');
+
+// High-precision search for final results
+const results = await search(query, 'high');
+```
+
+## Recall vs Speed Trade-offs
+
+```
+            Recall
+              ^
+        99% --|------------------o Quality
+              |                /
+        97% --|------------o Balanced
+              |          /
+        95% --|------o Speed
+              |    /
+        93% --|--o Fast
+              |
+              +----+----+----+----+---> Speed
+                  1ms  2ms  5ms  10ms
+```
+
+## Benchmarking Your Configuration
+
+```ts title="src/benchmark.ts"
+async function benchmarkHNSW(config: HNSWConfig) {
+  const db = new VectoriaDB({ useHNSW: true, hnsw: config });
+  await db.initialize();
+
+  // Build benchmark
+  const buildStart = Date.now();
+  await db.addMany(documents);
+  const buildTime = Date.now() - buildStart;
+
+  // Search benchmark
+  const searchTimes: number[] = [];
+  for (const query of testQueries) {
+    const start = Date.now();
+    await db.search(query);
+    searchTimes.push(Date.now() - start);
+  }
+
+  const avgSearchTime = searchTimes.reduce((a, b) => a + b) / searchTimes.length;
+
+  return { buildTime, avgSearchTime };
+}
+```
+
+## Common Issues
+
+### Poor Recall
+
+If results aren't relevant enough:
+1. Increase `efSearch` for search-time improvement
+2. Increase `M` and `efConstruction`, then rebuild index
+
+### Slow Search
+
+If search is too slow:
+1. Decrease `efSearch`
+2. Consider lower `M` if memory allows
+
+### Slow Indexing
+
+If bulk indexing is too slow:
+1. Decrease `efConstruction`
+2. Consider building without HNSW, then enabling it
+
+## Recommended Starting Points
+
+| Use Case | M | efConstruction | efSearch |
+|----------|---|----------------|----------|
+| Autocomplete | 12 | 100 | 20 |
+| General search | 16 | 200 | 50 |
+| High-precision | 24 | 400 | 100 |
+| Maximum recall | 32 | 400 | 200 |
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="HNSW Overview" icon="chart-network" href="/guides/scaling/hnsw-overview">
+    Introduction to HNSW
+  </Card>
+  <Card title="HNSW Configuration" icon="gear" href="/guides/scaling/hnsw-configuration">
+    Parameter reference
+  </Card>
+  <Card title="Search Performance" icon="gauge" href="/guides/search/performance">
+    General performance tips
+  </Card>
+</CardGroup>
