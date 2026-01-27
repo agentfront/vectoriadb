@@ -57,7 +57,8 @@
             "pages": [
               "docs/vectoriadb/get-started/welcome",
               "docs/vectoriadb/get-started/installation",
-              "docs/vectoriadb/get-started/quickstart"
+              "docs/vectoriadb/get-started/quickstart",
+              "docs/vectoriadb/updates"
             ]
           },
           {
@@ -144,12 +145,6 @@
             "pages": [
               "docs/vectoriadb/troubleshooting/faq",
               "docs/vectoriadb/troubleshooting/common-errors"
-            ]
-          },
-          {
-            "group": "Updates",
-            "pages": [
-              "docs/vectoriadb/updates"
             ]
           }
         ]

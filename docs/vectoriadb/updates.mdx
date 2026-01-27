@@ -1,68 +1,62 @@
 ---
-title: "Updates"
-description: "Changelog and release history for VectoriaDB"
-icon: "clock-rotate-left"
+title: 'Updates'
+slug: 'updates'
+icon: 'sparkles'
+mode: 'center'
 ---
 
-Stay up to date with the latest changes to VectoriaDB.
+<Update label="v2.0.x" description="December 2025 - January 2026" tags={["Releases"]}>
+  <Card
+    title="VectoriaDB v2.0.2: Security hardening"
+    href="https://github.com/agentfront/vectoriadb/releases/tag/v2.0.2"
+    cta="View full changelog"
+  >
+    **ReDoS Vulnerability Fixes** – Hardened regex analyzer and namespace sanitizer against ReDoS attacks.
+    - Regex vulnerability detection now trims analyzed patterns to 500 characters
+    - Redis namespace sanitization bounds input prior to regex processing
+    - Precompiled `SAFE_PATTERNS` used for deterministic string operations
 
-## v2.0.2 - January 2026
+    <Warning>
+    If you're using v2.0.0 or v2.0.1, upgrade to v2.0.2 immediately to patch security vulnerabilities.
+    </Warning>
+  </Card>
 
-### Security Fixes
+  <Card
+    title="VectoriaDB v2.0.0: Optional transformers and lazy loading"
+    href="https://github.com/agentfront/vectoriadb/releases/tag/v2.0.0"
+    cta="View full changelog"
+  >
+    **Optional Peer Dependencies** – `@huggingface/transformers` is now optional, enabling smaller bundle sizes when using TF-IDF only.
 
-- **ReDoS Vulnerability Fixes**: Hardened regex analyzer and namespace sanitizer against ReDoS attacks
-  - Regex vulnerability detection now trims analyzed patterns to 500 characters
-  - Redis namespace sanitization bounds input prior to regex processing
-  - Precompiled `SAFE_PATTERNS` used for deterministic string operations
+    **Lazy Loading** – Transformer embeddings now lazy-load the transformers module.
 
-<Warning>
-If you're using v2.0.0 or v2.0.1, upgrade to v2.0.2 immediately to patch security vulnerabilities.
-</Warning>
+    **Custom Pipeline Injection** – Added `EmbeddingService.setTransformersModule()` and `clearTransformersModule()` for testing.
 
----
+    **Migration:**
+    ```bash
+    npm install @huggingface/transformers
+    ```
+  </Card>
+</Update>
 
-## v2.0.0 - December 2025
+<Update label="v1.0.0" description="November 2025" tags={["Releases"]}>
+  <Card
+    title="VectoriaDB v1.0.0: Initial release"
+    href="https://github.com/agentfront/vectoriadb/releases/tag/v1.0.0"
+    cta="View full changelog"
+  >
+    **Initial Release** – Production-ready in-memory vector database for semantic search.
 
-### Breaking Changes
-
-- **Optional Peer Dependencies**: `@huggingface/transformers` is now an optional peer dependency
-  - Must be installed explicitly when using transformer embeddings
-  - Enables smaller bundle sizes when using TF-IDF only
-
-### New Features
-
-- **Lazy Loading**: Transformer embeddings now lazy-load the transformers module
-- **Custom Pipeline Injection**: Added `EmbeddingService.setTransformersModule()` and `clearTransformersModule()` for testing
-
-### Migration Guide
-
-```bash
-# Install the transformers peer dependency
-npm install @huggingface/transformers
-```
-
-If you're using `TFIDFVectoria` only, no changes are needed.
-
----
-
-## v1.0.0 - November 2025
-
-### Initial Release
-
-VectoriaDB v1.0.0 introduces a production-ready in-memory vector database for semantic search.
-
-#### Features
-
-- **In-Memory Vector Database**: Fast semantic search using cosine similarity
-- **Offline Embeddings**: Local embedding generation via transformers.js
-- **Type-Safe Metadata**: TypeScript generics for compile-time safety
-- **HNSW Indexing**: Sub-millisecond queries for large datasets
-- **Storage Adapters**: File, Redis, and Memory adapters for persistence
-- **Namespace Support**: Multi-tenant isolation
-- **Operational Guardrails**: Rate limits, batch validation, document size limits
-- **Typed Error Classes**: Machine-readable error codes for programmatic handling
-
----
+    - **In-Memory Vector Database**: Fast semantic search using cosine similarity
+    - **Offline Embeddings**: Local embedding generation via transformers.js
+    - **Type-Safe Metadata**: TypeScript generics for compile-time safety
+    - **HNSW Indexing**: Sub-millisecond queries for large datasets
+    - **Storage Adapters**: File, Redis, and Memory adapters for persistence
+    - **Namespace Support**: Multi-tenant isolation
+    - **Operational Guardrails**: Rate limits, batch validation, document size limits
+    - **Typed Error Classes**: Machine-readable error codes for programmatic handling
+  </Card>
+</Update>
 
 ## GitHub Releases
 
