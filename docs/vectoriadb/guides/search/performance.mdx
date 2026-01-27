@@ -1,0 +1,159 @@
+---
+title: "Search Performance"
+description: "Optimize search performance in VectoriaDB"
+icon: "gauge"
+---
+
+Learn how to optimize search performance for your use case.
+
+## Use Appropriate topK
+
+Request only as many results as you need:
+
+```ts title="src/performance-topk.ts"
+// Good - only fetch what you'll display
+const results = await toolIndex.search(query, { topK: 5 });
+
+// Wasteful - fetching more than needed
+const results = await toolIndex.search(query, { topK: 1000 });
+```
+
+## Use Filters to Reduce Search Space
+
+Apply metadata filters to narrow results:
+
+```ts title="src/performance-filters.ts"
+// Filter first, then rank - more efficient mental model
+const results = await toolIndex.search(query, {
+  filter: (m) => m.owner === 'billing',
+  topK: 10,
+});
+```
+
+## Enable HNSW for Large Datasets
+
+For datasets > 10,000 documents, enable HNSW indexing:
+
+```ts title="src/performance-hnsw.ts"
+const db = new VectoriaDB({
+  useHNSW: true,
+  hnsw: { efSearch: 50 },
+});
+```
+
+### Performance Comparison
+
+| Documents | Brute-force | HNSW (ef=50) |
+|-----------|-------------|--------------|
+| 10,000 | ~50ms | ~1ms |
+| 50,000 | ~250ms | ~1ms |
+| 100,000 | ~500ms | ~2ms |
+
+See [HNSW Scaling](/vectoriadb/guides/scaling/hnsw-overview) for details.
+
+## Query Caching
+
+Cache frequent queries for better performance:
+
+```ts title="src/query-caching.ts"
+const queryCache = new Map<string, SearchResult[]>();
+
+async function cachedSearch(query: string) {
+  const cacheKey = query.toLowerCase().trim();
+
+  if (queryCache.has(cacheKey)) {
+    return queryCache.get(cacheKey)!;
+  }
+
+  const results = await db.search(query);
+  queryCache.set(cacheKey, results);
+
+  // Clear cache after 5 minutes
+  setTimeout(() => queryCache.delete(cacheKey), 5 * 60 * 1000);
+
+  return results;
+}
+```
+
+## Warmup Queries
+
+Run a warmup query during startup to optimize the embedding pipeline:
+
+```ts title="src/warmup.ts"
+async function warmupSearch() {
+  await db.initialize();
+
+  // Warmup embedding pipeline
+  await db.search('warmup query', { topK: 1 });
+
+  console.log('Search ready');
+}
+```
+
+## Batch Similar Queries
+
+If you need to run multiple searches with the same query:
+
+```ts title="src/batch-queries.ts"
+// Instead of running multiple searches
+const allResults = await db.search(query, { topK: 100 });
+
+// Then filter in memory
+const billingResults = allResults.filter(r => r.metadata.owner === 'billing');
+const userResults = allResults.filter(r => r.metadata.owner === 'users');
+```
+
+## Monitoring Search Performance
+
+```ts title="src/performance-monitoring.ts"
+async function monitoredSearch(query: string, options?: SearchOptions) {
+  const start = Date.now();
+
+  const results = await db.search(query, options);
+
+  const latency = Date.now() - start;
+
+  console.log({
+    query: query.substring(0, 50),
+    latencyMs: latency,
+    resultCount: results.length,
+    topScore: results[0]?.score,
+  });
+
+  return results;
+}
+```
+
+## Performance Checklist
+
+<Steps>
+  <Step title="Use appropriate topK">
+    Don't request more results than you need
+  </Step>
+  <Step title="Apply metadata filters">
+    Reduce the search space with filters
+  </Step>
+  <Step title="Enable HNSW for scale">
+    Use HNSW indexing for > 10,000 documents
+  </Step>
+  <Step title="Cache frequent queries">
+    Implement query caching for repeated searches
+  </Step>
+  <Step title="Warmup on startup">
+    Run a warmup query to optimize the pipeline
+  </Step>
+</Steps>
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="HNSW Overview" icon="chart-network" href="/vectoriadb/guides/scaling/hnsw-overview">
+    Scale with HNSW
+  </Card>
+  <Card title="HNSW Tuning" icon="sliders" href="/vectoriadb/guides/scaling/hnsw-tuning">
+    Tune HNSW parameters
+  </Card>
+  <Card title="Basic Search" icon="magnifying-glass" href="/vectoriadb/guides/search/basic-search">
+    Search fundamentals
+  </Card>
+</CardGroup>

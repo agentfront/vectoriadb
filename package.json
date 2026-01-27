@@ -12,7 +12,7 @@
     "lint": "nx run-many -t lint --outputStyle stream",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "docs": "cd docs && mint dev --port 4301"
+    "docs": "mint dev --port 4301"
   },
   "private": true,
   "devDependencies": {

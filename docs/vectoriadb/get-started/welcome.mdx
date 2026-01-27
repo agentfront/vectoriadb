@@ -1,0 +1,70 @@
+---
+title: "Welcome to VectoriaDB"
+description: "Lightweight in-memory vector database for semantic search with offline embeddings"
+icon: "hand-wave"
+---
+
+VectoriaDB is a production-ready in-memory vector database built on transformers.js. Use it to surface the right tool, prompt, or document snippet from natural-language queries without shipping data to an external service.
+
+<Info>
+VectoriaDB runs entirely offline - your data never leaves the server, and you avoid API quotas or rate limits.
+</Info>
+
+## Features
+
+<CardGroup cols={3}>
+  <Card title="Offline Embeddings" icon="microchip">
+    Embeddings run locally via transformers.js, so your data never leaves the server and you avoid API quotas.
+  </Card>
+  <Card title="Type-safe Metadata" icon="shield-check">
+    Strong generics ensure every document you index keeps the same shape as your metadata interface.
+  </Card>
+  <Card title="Operational Guardrails" icon="gauge">
+    Built-in rate limits, batch validation, HNSW indexing, and storage adapters keep the index production ready.
+  </Card>
+</CardGroup>
+
+## When to Use VectoriaDB
+
+- **Tool discovery** - Surface the right tool from natural-language queries
+- **Document search** - Semantic search over documents, prompts, or code snippets
+- **Recommendation systems** - Find similar items based on text embeddings
+- **Offline-first applications** - No external API dependencies
+
+<Note>
+The default Xenova `all-MiniLM-L6-v2` model is ~22 MB. The first initialization downloads and caches it under `cacheDir`; subsequent boots reuse the local copy.
+</Note>
+
+## Core Concepts
+
+### Documents
+
+Each document has:
+- **id** - Unique identifier
+- **text** - Natural language text to embed
+- **metadata** - Type-safe custom data
+
+### Embeddings
+
+VectoriaDB generates embeddings locally using transformers.js. The default model is `all-MiniLM-L6-v2` which provides good quality with fast inference.
+
+### Similarity Search
+
+Search returns documents ranked by cosine similarity to your query. You can filter results by metadata and set minimum similarity thresholds.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/vectoriadb/get-started/installation">
+    Install VectoriaDB in your project
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/vectoriadb/get-started/quickstart">
+    Build your first semantic search
+  </Card>
+  <Card title="Tool Discovery" icon="wand-magic-sparkles" href="/vectoriadb/guides/use-cases/tool-discovery">
+    Complete tool discovery guide
+  </Card>
+  <Card title="API Reference" icon="code" href="/vectoriadb/api-reference/overview">
+    Explore the full API
+  </Card>
+</CardGroup>

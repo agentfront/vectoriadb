@@ -1,0 +1,125 @@
+---
+title: "Removing Documents"
+description: "Remove documents from VectoriaDB"
+icon: "trash"
+---
+
+Learn how to remove documents from your VectoriaDB index.
+
+## Remove Single Document
+
+```ts title="src/remove-single.ts"
+// Returns true if document was found and removed
+const removed = await toolIndex.remove('users:list');
+
+if (removed) {
+  console.log('Document removed');
+} else {
+  console.log('Document not found');
+}
+```
+
+## Remove Multiple Documents
+
+```ts title="src/remove-multiple.ts"
+// Returns count of documents actually removed
+const removedCount = await toolIndex.removeMany([
+  'users:list',
+  'billing:charge',
+  'nonexistent:id', // Silently skipped if not found
+]);
+
+console.log(`Removed ${removedCount} documents`);
+```
+
+## Clear All Documents
+
+```ts title="src/clear-all.ts"
+// Remove all documents from the index
+await toolIndex.clear();
+
+console.log(`Index now contains ${toolIndex.size()} documents`); // 0
+```
+
+<Warning>
+`clear()` is irreversible and removes all documents. Make sure to save important data before calling it.
+</Warning>
+
+## Remove by Filter
+
+VectoriaDB doesn't have a built-in "remove by filter" method. Use this pattern:
+
+```ts title="src/remove-by-filter.ts"
+// Get IDs of documents matching filter
+const deprecatedDocs = toolIndex.filter((m) => m.deprecated === true);
+const idsToRemove = deprecatedDocs.map((doc) => doc.id);
+
+// Remove them
+const removed = toolIndex.removeMany(idsToRemove);
+console.log(`Removed ${removed} deprecated documents`);
+```
+
+## Safe Removal Pattern
+
+```ts title="src/safe-remove.ts"
+async function safeRemove(id: string) {
+  // Check if exists first
+  const doc = toolIndex.get(id);
+  if (!doc) {
+    console.log(`Document ${id} not found`);
+    return false;
+  }
+
+  // Log what we're removing
+  console.log(`Removing: ${doc.metadata.toolName}`);
+
+  // Remove
+  return toolIndex.remove(id);
+}
+```
+
+## HNSW Index Updates
+
+When using HNSW indexing, remove operations update the index structure:
+
+```ts title="src/hnsw-remove.ts"
+const db = new VectoriaDB({
+  useHNSW: true,
+});
+
+// Removal updates HNSW graph
+await db.remove('doc-id');
+
+// Search immediately reflects the removal
+const results = await db.search('query');
+```
+
+## Storage Considerations
+
+Removing documents doesn't automatically update persistent storage:
+
+```ts title="src/remove-with-storage.ts"
+// Remove document
+await db.remove('doc-id');
+
+// Save updated state to storage
+await db.saveToStorage();
+```
+
+<Tip>
+For file or Redis storage, call `saveToStorage()` after batch removals to persist the changes.
+</Tip>
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Adding Documents" icon="plus" href="/vectoriadb/guides/core/adding-documents">
+    Add documents
+  </Card>
+  <Card title="Updating Documents" icon="pen" href="/vectoriadb/guides/core/updating-documents">
+    Update documents
+  </Card>
+  <Card title="Storage" icon="floppy-disk" href="/vectoriadb/guides/storage/overview">
+    Persist changes
+  </Card>
+</CardGroup>

@@ -1,0 +1,178 @@
+---
+title: "Cache Invalidation"
+description: "Control when VectoriaDB re-indexes documents"
+icon: "rotate"
+---
+
+Learn how VectoriaDB manages cache invalidation and when re-indexing occurs.
+
+## How Invalidation Works
+
+VectoriaDB validates the cache on `initialize()` by checking:
+
+1. **Cache exists**: Does the storage have cached data?
+2. **Tools hash matches**: Has the document content changed?
+3. **Version matches**: Has the application version changed?
+4. **Model matches**: Is the embedding model the same?
+
+If any check fails, the cache is invalidated.
+
+## Configuration
+
+```ts title="src/cache-config.ts"
+import { VectoriaDB, FileStorageAdapter, SerializationUtils } from 'vectoriadb';
+
+const documents = collectToolDocuments();
+
+const db = new VectoriaDB<ToolDocument>({
+  storageAdapter: new FileStorageAdapter({
+    cacheDir: './.cache/vectoriadb',
+  }),
+
+  // Hash of document contents - invalidates when documents change
+  toolsHash: SerializationUtils.createToolsHash(documents),
+
+  // Application version - invalidates on deployments
+  version: process.env.npm_package_version,
+
+  // Model name - invalidates if model changes
+  modelName: 'Xenova/all-MiniLM-L6-v2',
+});
+```
+
+## Tools Hash
+
+Create a deterministic hash of your documents:
+
+```ts title="src/tools-hash.ts"
+import { SerializationUtils } from 'vectoriadb';
+
+const documents = [
+  { id: 'tool1', text: 'Description 1', metadata: { /* ... */ } },
+  { id: 'tool2', text: 'Description 2', metadata: { /* ... */ } },
+];
+
+// Hash is based on document IDs and text content
+const hash = SerializationUtils.createToolsHash(documents);
+console.log(hash); // e.g., "abc123..."
+```
+
+<Tip>
+The tools hash should change whenever your documents change. Use `SerializationUtils.createToolsHash()` to generate it automatically.
+</Tip>
+
+## Version Invalidation
+
+Invalidate cache on deployments:
+
+```ts title="src/version-invalidation.ts"
+const db = new VectoriaDB({
+  version: process.env.npm_package_version, // From package.json
+  // or
+  version: '1.2.3', // Manual version string
+});
+```
+
+## Manual Cache Control
+
+### Force Re-index
+
+```ts title="src/force-reindex.ts"
+// Clear storage and re-index
+await db.clearStorage();
+await db.addMany(documents);
+await db.saveToStorage();
+```
+
+### Check Cache Status
+
+```ts title="src/check-cache.ts"
+await db.initialize();
+
+if (db.size() === 0) {
+  console.log('Cache miss - re-indexing...');
+  await db.addMany(documents);
+  await db.saveToStorage();
+} else {
+  console.log('Cache hit - loaded from storage');
+}
+```
+
+## Warm-up Pattern
+
+Common pattern for production deployments:
+
+```ts title="src/warmup.ts"
+export async function warmToolIndex(documents: ToolDocument[]) {
+  const toolIndex = new VectoriaDB<ToolDocument>({
+    storageAdapter: new FileStorageAdapter({
+      cacheDir: './.cache/vectoriadb',
+      namespace: 'tool-index',
+    }),
+    toolsHash: SerializationUtils.createToolsHash(documents),
+    version: process.env.npm_package_version,
+  });
+
+  await toolIndex.initialize();
+
+  // Only re-index if cache was invalidated
+  if (toolIndex.size() === 0) {
+    console.log('Cache miss - re-indexing...');
+    await toolIndex.addMany(documents);
+    await toolIndex.saveToStorage();
+  } else {
+    console.log('Cache hit - loaded from storage');
+  }
+
+  return toolIndex;
+}
+```
+
+## Debugging Cache Issues
+
+```ts title="src/debug-cache.ts"
+await db.initialize();
+
+console.log({
+  documentsLoaded: db.size(),
+  expectedDocuments: documents.length,
+  cacheHit: db.size() > 0,
+});
+
+if (db.size() !== documents.length) {
+  console.log('Cache mismatch - possible reasons:');
+  console.log('- toolsHash changed');
+  console.log('- version changed');
+  console.log('- modelName changed');
+  console.log('- cache file corrupted');
+}
+```
+
+## Error Handling
+
+```ts title="src/cache-errors.ts"
+import { StorageError } from 'vectoriadb';
+
+try {
+  await db.initialize();
+} catch (error) {
+  if (error instanceof StorageError) {
+    console.warn('Storage error, continuing without cache:', error.message);
+    // Continue - will re-index
+  }
+}
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Storage Overview" icon="floppy-disk" href="/vectoriadb/guides/storage/overview">
+    Storage fundamentals
+  </Card>
+  <Card title="File Adapter" icon="file" href="/vectoriadb/guides/storage/file-adapter">
+    File storage
+  </Card>
+  <Card title="Deployment" icon="rocket" href="/vectoriadb/deployment/production-config">
+    Production setup
+  </Card>
+</CardGroup>

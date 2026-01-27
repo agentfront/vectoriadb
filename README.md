@@ -4,101 +4,69 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 
-> A lightweight, production-ready in-memory vector database for semantic search in JavaScript/TypeScript
-
-VectoriaDB is a fast, minimal-dependency vector database designed for in-memory semantic search. Powered by [transformers.js](https://github.com/xenova/transformers.js), it's perfect for applications that need to quickly search through documents, tools, or any text-based data using natural language queries.
+> Lightweight, in-memory vector database for semantic search in JavaScript/TypeScript
 
 ## Features
 
-- **Fast**: In-memory storage with optimized HNSW indexing for O(log n) search
-- **Lightweight**: Minimal dependencies, small footprint
-- **Semantic Search**: Natural language queries using state-of-the-art embeddings
-- **Type-Safe**: Full TypeScript support with generics
-- **Batch Operations**: Efficient bulk insert and search
-- **Flexible Filtering**: Custom metadata filtering with type safety
-- **Scalable**: HNSW index for 100k+ documents with sub-millisecond search
-- **Persistent**: File & Redis adapters for caching across restarts
-- **Smart Updates**: Incremental updates without re-embedding (instant metadata updates)
-- **Production-Ready Error Handling**: Typed error classes with specific error codes
+- **Fast** - HNSW indexing for O(log n) search on 100k+ documents
+- **Lightweight** - Minimal dependencies, small footprint
+- **Type-Safe** - Full TypeScript support with generics
+- **Flexible** - Custom metadata filtering with batch operations
+- **Persistent** - File & Redis adapters for caching across restarts
+- **Zero-Dep Option** - TF-IDF mode for simpler deployments
 
 ## Installation
 
 ```bash
 npm install vectoriadb
-# or
-yarn add vectoriadb
-# or
-pnpm add vectoriadb
 ```
 
-**Requirements:**
-
-- Node.js 18+ (for transformers.js compatibility)
-- TypeScript 5.0+ (if using TypeScript)
+Requires Node.js 18+.
 
 ## Quick Start
 
 ```typescript
 import { VectoriaDB } from 'vectoriadb';
 
-// Create and initialize the database
 const db = new VectoriaDB();
 await db.initialize();
 
-// Add documents
-await db.add('doc-1', 'How to create a user account', {
-  id: 'doc-1',
-  category: 'auth',
-  author: 'Alice',
-});
+// Add documents with metadata
+await db.add('doc-1', 'How to create a user account', { category: 'auth' });
+await db.add('doc-2', 'Send email notifications', { category: 'notifications' });
 
-await db.add('doc-2', 'Send email notifications to users', {
-  id: 'doc-2',
-  category: 'notifications',
-  author: 'Bob',
-});
-
-// Search
+// Semantic search
 const results = await db.search('creating new accounts');
-console.log(results[0].metadata); // { id: 'doc-1', category: 'auth', ... }
 console.log(results[0].score); // 0.87
 ```
 
 ## Documentation
 
-| Guide | Description |
-|-------|-------------|
-| [Overview](./docs/overview.md) | Installation, quick start, configuration |
-| [Indexing](./docs/guides/indexing.md) | Adding and updating documents |
-| [Search](./docs/guides/search.md) | Querying with filters and thresholds |
-| [Persistence](./docs/guides/persistence.md) | File and Redis storage adapters |
-| [HNSW](./docs/guides/hnsw.md) | Scaling to 100k+ documents |
-| [TF-IDF](./docs/guides/tfidf.md) | Zero-dependency alternative |
-| [Tool Discovery](./docs/guides/tool-discovery.md) | Complete tool indexing example |
-| [Error Handling](./docs/reference/errors.md) | Typed error classes |
-
-See also the [detailed API documentation](./libs/vectoriadb/README.md).
+| Topic | Link |
+|-------|------|
+| Get Started | [Welcome](https://agentfront.dev/docs/vectoriadb/get-started/welcome) |
+| Installation | [Setup Guide](https://agentfront.dev/docs/vectoriadb/get-started/installation) |
+| Quickstart | [First Steps](https://agentfront.dev/docs/vectoriadb/get-started/quickstart) |
+| Indexing | [Core Guide](https://agentfront.dev/docs/vectoriadb/guides/core/indexing-basics) |
+| Search | [Search Guide](https://agentfront.dev/docs/vectoriadb/guides/search/basic-search) |
+| Storage | [Persistence](https://agentfront.dev/docs/vectoriadb/guides/storage/overview) |
+| Scaling | [HNSW Overview](https://agentfront.dev/docs/vectoriadb/guides/scaling/hnsw-overview) |
+| TF-IDF | [Alternative](https://agentfront.dev/docs/vectoriadb/guides/alternatives/tfidf) |
+| Production | [Deployment](https://agentfront.dev/docs/vectoriadb/deployment/production-config) |
+| API Reference | [Full API](https://agentfront.dev/docs/vectoriadb/api-reference/overview) |
 
 ## Development
 
 ```bash
-# Install dependencies
-yarn install
-
-# Run tests
-npx nx test vectoriadb
-
-# Build library
-npx nx build vectoriadb
-
-# Run demo
-npx nx serve vectoriadb-demo
+yarn install          # Install dependencies
+npx nx test vectoriadb    # Run tests
+npx nx build vectoriadb   # Build library
 ```
 
 ## License
 
 Apache-2.0
 
-## Credits
+---
 
 Built with [transformers.js](https://github.com/xenova/transformers.js) by Xenova.
