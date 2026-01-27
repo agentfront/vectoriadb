@@ -859,8 +859,8 @@ Memory efficient with Float32 arrays:
 **Without HNSW (brute-force):**
 
 - **Complexity**: O(n) where n = number of documents
-- **Performance**: <10ms for 10,000 documents on modern hardware
-- **Best for**: <10,000 documents
+- **Performance**: &lt;10ms for 10,000 documents on modern hardware
+- **Best for**: &lt;10,000 documents
 
 **With HNSW (approximate nearest neighbor):**
 
@@ -962,7 +962,7 @@ All tests use mocked transformers.js to avoid downloading models during CI/CD, m
 
 VectoriaDB is ideal for:
 
-- **Small to medium datasets** (<100k documents)
+- **Small to medium datasets** (&lt;100k documents)
 - **Fast in-memory search** without external dependencies
 - **Embedded applications** that need semantic search
 - **Development and testing** before scaling to production DBs

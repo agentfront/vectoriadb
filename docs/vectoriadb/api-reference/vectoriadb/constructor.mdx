@@ -1,0 +1,143 @@
+---
+title: "VectoriaDB Constructor"
+description: "Create a new VectoriaDB instance"
+icon: "plus"
+---
+
+Create a new VectoriaDB instance with configuration options.
+
+## Signature
+
+```ts
+constructor(config?: VectoriaConfig)
+```
+
+## Parameters
+
+### config
+
+Optional configuration object. All options have sensible defaults.
+
+```ts
+interface VectoriaConfig {
+  modelName?: string;
+  cacheDir?: string;
+  dimensions?: number;
+  defaultSimilarityThreshold?: number;
+  defaultTopK?: number;
+  useHNSW?: boolean;
+  hnsw?: HNSWConfig;
+  storageAdapter?: StorageAdapter;
+  toolsHash?: string;
+  version?: string;
+  maxDocuments?: number;
+  maxDocumentSize?: number;
+  maxBatchSize?: number;
+  verboseErrors?: boolean;
+}
+```
+
+## Options Reference
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `modelName` | `string` | `'Xenova/all-MiniLM-L6-v2'` | Embedding model to use |
+| `cacheDir` | `string` | `'./.cache/transformers'` | Model cache directory |
+| `dimensions` | `number` | Auto-detected | Vector dimensions |
+| `defaultSimilarityThreshold` | `number` | `0.3` | Default minimum similarity |
+| `defaultTopK` | `number` | `10` | Default results limit |
+| `useHNSW` | `boolean` | `false` | Enable HNSW indexing |
+| `hnsw` | `HNSWConfig` | `{}` | HNSW configuration |
+| `storageAdapter` | `StorageAdapter` | `MemoryStorageAdapter` | Persistence adapter |
+| `toolsHash` | `string` | `''` | Cache invalidation hash |
+| `version` | `string` | `'1.0.0'` | Version for cache compatibility |
+| `maxDocuments` | `number` | `100000` | Maximum documents (DoS protection) |
+| `maxDocumentSize` | `number` | `1000000` | Max text size in chars |
+| `maxBatchSize` | `number` | `1000` | Max batch operation size |
+| `verboseErrors` | `boolean` | `true` | Enable detailed errors |
+
+## Examples
+
+### Basic Usage
+
+```ts
+import { VectoriaDB, DocumentMetadata } from 'vectoriadb';
+
+interface MyDocument extends DocumentMetadata {
+  title: string;
+  category: string;
+}
+
+const db = new VectoriaDB<MyDocument>();
+```
+
+### With Configuration
+
+```ts
+const db = new VectoriaDB<MyDocument>({
+  modelName: 'Xenova/all-MiniLM-L6-v2',
+  cacheDir: './.cache/transformers',
+  defaultSimilarityThreshold: 0.4,
+  defaultTopK: 5,
+});
+```
+
+### With Storage
+
+```ts
+import { FileStorageAdapter, SerializationUtils } from 'vectoriadb';
+
+const documents = collectDocuments();
+
+const db = new VectoriaDB<MyDocument>({
+  storageAdapter: new FileStorageAdapter({
+    cacheDir: './.cache/vectoriadb',
+    namespace: 'my-index',
+  }),
+  toolsHash: SerializationUtils.createToolsHash(documents),
+  version: '1.0.0',
+});
+```
+
+### With HNSW
+
+```ts
+const db = new VectoriaDB<MyDocument>({
+  useHNSW: true,
+  hnsw: {
+    M: 16,
+    efConstruction: 200,
+    efSearch: 50,
+  },
+  maxDocuments: 100000,
+});
+```
+
+## Type Parameter
+
+### `T extends DocumentMetadata`
+
+The generic type parameter defines your metadata structure:
+
+```ts
+interface DocumentMetadata {
+  id: string;
+  [key: string]: any;
+}
+```
+
+Your custom interface must extend `DocumentMetadata` and include an `id` field.
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="initialize()" icon="play" href="/vectoriadb/api-reference/vectoriadb/initialize">
+    Initialize the database
+  </Card>
+  <Card title="Configuration" icon="gear" href="/vectoriadb/api-reference/interfaces/config">
+    Full config interface
+  </Card>
+  <Card title="Storage Adapters" icon="floppy-disk" href="/vectoriadb/api-reference/storage-adapters/file-adapter">
+    Persistence options
+  </Card>
+</CardGroup>

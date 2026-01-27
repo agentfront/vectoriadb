@@ -1,0 +1,123 @@
+---
+title: "Environment Variables"
+description: "Configuration reference for VectoriaDB environment variables"
+icon: "list"
+---
+
+Reference for all VectoriaDB environment variables.
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VECTORIA_MODEL` | `Xenova/all-MiniLM-L6-v2` | Embedding model |
+| `VECTORIA_MODEL_CACHE` | `./.cache/transformers` | Model cache directory |
+| `VECTORIA_CACHE_DIR` | `./.cache/vectoriadb` | Embeddings cache directory |
+| `VECTORIA_NAMESPACE` | `default` | Storage namespace |
+| `VECTORIA_MAX_DOCS` | `100000` | Maximum documents |
+| `VECTORIA_MAX_DOC_SIZE` | `100000` | Max document size (chars) |
+| `VECTORIA_MAX_BATCH` | `500` | Max batch size |
+| `VECTORIA_THRESHOLD` | `0.4` | Default similarity threshold |
+| `VECTORIA_TOP_K` | `10` | Default results limit |
+| `VECTORIA_USE_HNSW` | `false` | Enable HNSW indexing |
+| `VECTORIA_HNSW_M` | `16` | HNSW M parameter |
+| `VECTORIA_HNSW_EF_CONSTRUCTION` | `200` | HNSW build quality |
+| `VECTORIA_HNSW_EF_SEARCH` | `50` | HNSW search quality |
+
+## Usage Example
+
+```ts title="src/config.ts"
+const db = new VectoriaDB({
+  modelName: process.env.VECTORIA_MODEL || 'Xenova/all-MiniLM-L6-v2',
+  cacheDir: process.env.VECTORIA_MODEL_CACHE || './.cache/transformers',
+
+  storageAdapter: new FileStorageAdapter({
+    cacheDir: process.env.VECTORIA_CACHE_DIR || './.cache/vectoriadb',
+    namespace: process.env.VECTORIA_NAMESPACE || 'default',
+  }),
+
+  maxDocuments: parseInt(process.env.VECTORIA_MAX_DOCS || '100000'),
+  maxDocumentSize: parseInt(process.env.VECTORIA_MAX_DOC_SIZE || '100000'),
+  maxBatchSize: parseInt(process.env.VECTORIA_MAX_BATCH || '500'),
+
+  defaultSimilarityThreshold: parseFloat(process.env.VECTORIA_THRESHOLD || '0.4'),
+  defaultTopK: parseInt(process.env.VECTORIA_TOP_K || '10'),
+
+  useHNSW: process.env.VECTORIA_USE_HNSW === 'true',
+  hnsw: {
+    M: parseInt(process.env.VECTORIA_HNSW_M || '16'),
+    efConstruction: parseInt(process.env.VECTORIA_HNSW_EF_CONSTRUCTION || '200'),
+    efSearch: parseInt(process.env.VECTORIA_HNSW_EF_SEARCH || '50'),
+  },
+
+  verboseErrors: process.env.NODE_ENV !== 'production',
+});
+```
+
+## .env File
+
+```env title=".env"
+# Model configuration
+VECTORIA_MODEL=Xenova/all-MiniLM-L6-v2
+VECTORIA_MODEL_CACHE=./.cache/transformers
+
+# Storage configuration
+VECTORIA_CACHE_DIR=./.cache/vectoriadb
+VECTORIA_NAMESPACE=production
+
+# Resource limits
+VECTORIA_MAX_DOCS=100000
+VECTORIA_MAX_DOC_SIZE=100000
+VECTORIA_MAX_BATCH=500
+
+# Search defaults
+VECTORIA_THRESHOLD=0.4
+VECTORIA_TOP_K=10
+
+# HNSW configuration
+VECTORIA_USE_HNSW=true
+VECTORIA_HNSW_M=16
+VECTORIA_HNSW_EF_CONSTRUCTION=200
+VECTORIA_HNSW_EF_SEARCH=50
+```
+
+## Docker Environment
+
+```yaml title="docker-compose.yml"
+services:
+  app:
+    environment:
+      - VECTORIA_MODEL=Xenova/all-MiniLM-L6-v2
+      - VECTORIA_CACHE_DIR=/app/.cache/vectoriadb
+      - VECTORIA_USE_HNSW=true
+      - VECTORIA_MAX_DOCS=100000
+```
+
+## Kubernetes ConfigMap
+
+```yaml title="k8s/configmap.yaml"
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vectoriadb-config
+data:
+  VECTORIA_MODEL: "Xenova/all-MiniLM-L6-v2"
+  VECTORIA_CACHE_DIR: "/app/.cache/vectoriadb"
+  VECTORIA_USE_HNSW: "true"
+  VECTORIA_MAX_DOCS: "100000"
+  VECTORIA_THRESHOLD: "0.4"
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Production Config" icon="gear" href="/vectoriadb/deployment/production-config">
+    Full configuration
+  </Card>
+  <Card title="Docker" icon="docker" href="/vectoriadb/deployment/docker">
+    Container deployment
+  </Card>
+  <Card title="Health Monitoring" icon="heart-pulse" href="/vectoriadb/deployment/health-monitoring">
+    Monitoring setup
+  </Card>
+</CardGroup>

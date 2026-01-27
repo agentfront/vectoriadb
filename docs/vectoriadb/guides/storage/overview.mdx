@@ -1,0 +1,136 @@
+---
+title: "Storage Overview"
+description: "Persist embeddings between restarts with storage adapters"
+icon: "floppy-disk"
+---
+
+Learn how to persist embeddings between restarts using storage adapters.
+
+<Info>
+By default, VectoriaDB stores embeddings in memory. Use a storage adapter to persist them between server restarts.
+</Info>
+
+## Storage Adapters
+
+| Adapter | Use Case | Persistence |
+|---------|----------|-------------|
+| `MemoryStorageAdapter` | Development, testing | None (default) |
+| `FileStorageAdapter` | Single-server deployment | Local disk |
+| `RedisStorageAdapter` | Multi-pod deployment | Shared cache |
+
+## Quick Start
+
+```ts title="src/storage-quickstart.ts"
+import { VectoriaDB, FileStorageAdapter, SerializationUtils } from 'vectoriadb';
+
+const documents = collectToolDocuments();
+
+const toolIndex = new VectoriaDB<ToolDocument>({
+  storageAdapter: new FileStorageAdapter({
+    cacheDir: './.cache/vectoriadb',
+    namespace: 'tool-index',
+  }),
+  toolsHash: SerializationUtils.createToolsHash(documents),
+  version: process.env.npm_package_version,
+});
+
+await toolIndex.initialize();
+
+if (toolIndex.size() === 0) {
+  await toolIndex.addMany(documents);
+  await toolIndex.saveToStorage(); // Persist to disk
+}
+```
+
+## How Persistence Works
+
+1. **Initialize**: VectoriaDB checks for cached data
+2. **Validate**: Cache is validated against `toolsHash`, `version`, and `modelName`
+3. **Load or Index**: Valid cache is loaded; otherwise re-indexing occurs
+4. **Save**: Call `saveToStorage()` to persist changes
+
+## Cache Invalidation
+
+VectoriaDB automatically invalidates the cache when documents change:
+
+```ts title="src/cache-invalidation.ts"
+const toolIndex = new VectoriaDB<ToolDocument>({
+  storageAdapter: new FileStorageAdapter({ cacheDir: './.cache' }),
+
+  // Hash of document contents - invalidates when documents change
+  toolsHash: SerializationUtils.createToolsHash(documents),
+
+  // Application version - invalidates on deployments
+  version: process.env.npm_package_version,
+});
+```
+
+### Validation Checks
+
+On `initialize()`, VectoriaDB checks:
+1. Does the cache file/key exist?
+2. Does `toolsHash` match?
+3. Does `version` match?
+4. Does `modelName` match?
+
+If any check fails, the cache is invalidated and re-indexing occurs.
+
+## Manual Storage Operations
+
+```ts title="src/manual-storage.ts"
+// Save current state to storage
+await toolIndex.saveToStorage();
+
+// Load from storage (done automatically on initialize)
+await toolIndex.loadFromStorage();
+
+// Clear storage
+await toolIndex.clearStorage();
+```
+
+## Multi-Tenant Isolation
+
+Use namespaces to isolate different indexes:
+
+```ts title="src/multi-tenant.ts"
+// Tenant A
+const tenantAIndex = new VectoriaDB({
+  storageAdapter: new RedisStorageAdapter({
+    client: redisClient,
+    namespace: 'tenant-a',
+  }),
+});
+
+// Tenant B
+const tenantBIndex = new VectoriaDB({
+  storageAdapter: new RedisStorageAdapter({
+    client: redisClient,
+    namespace: 'tenant-b',
+  }),
+});
+```
+
+## Choosing an Adapter
+
+<CardGroup cols={3}>
+  <Card title="File Adapter" icon="file" href="/vectoriadb/guides/storage/file-adapter">
+    Single-server deployments
+  </Card>
+  <Card title="Redis Adapter" icon="database" href="/vectoriadb/guides/storage/redis-adapter">
+    Multi-pod environments
+  </Card>
+  <Card title="Memory Adapter" icon="memory" href="/vectoriadb/guides/storage/memory-adapter">
+    Development and testing
+  </Card>
+</CardGroup>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Cache Invalidation" icon="rotate" href="/vectoriadb/guides/storage/cache-invalidation">
+    Advanced cache control
+  </Card>
+  <Card title="Deployment" icon="rocket" href="/vectoriadb/deployment/production-config">
+    Production configuration
+  </Card>
+</CardGroup>

@@ -1,0 +1,153 @@
+---
+title: "Filtering Results"
+description: "Filter search results by metadata"
+icon: "filter"
+---
+
+Learn how to filter search results using metadata predicates.
+
+## Simple Filters
+
+```ts title="src/simple-filters.ts"
+// Filter by owner
+const results = await toolIndex.search('user management', {
+  filter: (m) => m.owner === 'users',
+});
+
+// Filter by tag
+const results = await toolIndex.search('payment', {
+  filter: (m) => m.tags.includes('billing'),
+});
+
+// Exclude deprecated
+const results = await toolIndex.search('list items', {
+  filter: (m) => !m.deprecated,
+});
+```
+
+## Complex Filters
+
+```ts title="src/complex-filters.ts"
+const results = await toolIndex.search('sensitive operation', {
+  filter: (metadata) => {
+    // Must be owned by specific teams
+    const allowedOwners = ['billing', 'users', 'orders'];
+    if (!allowedOwners.includes(metadata.owner)) return false;
+
+    // Must not be deprecated
+    if (metadata.deprecated) return false;
+
+    // Must not be destructive OR user has elevated permissions
+    if (metadata.risk === 'destructive' && !userHasPermission) return false;
+
+    return true;
+  },
+});
+```
+
+## Combining Multiple Conditions
+
+### AND Logic
+
+```ts title="src/filter-and.ts"
+const results = await db.search(query, {
+  filter: (m) =>
+    m.owner === 'billing' &&
+    m.risk === 'safe' &&
+    !m.deprecated,
+});
+```
+
+### OR Logic
+
+```ts title="src/filter-or.ts"
+const results = await db.search(query, {
+  filter: (m) =>
+    m.owner === 'billing' ||
+    m.owner === 'users' ||
+    m.tags.includes('admin'),
+});
+```
+
+### Dynamic Filters
+
+```ts title="src/dynamic-filters.ts"
+function createFilter(options: {
+  owners?: string[];
+  excludeDeprecated?: boolean;
+  riskLevels?: string[];
+}) {
+  return (metadata: ToolDocument) => {
+    if (options.owners && !options.owners.includes(metadata.owner)) {
+      return false;
+    }
+    if (options.excludeDeprecated && metadata.deprecated) {
+      return false;
+    }
+    if (options.riskLevels && !options.riskLevels.includes(metadata.risk)) {
+      return false;
+    }
+    return true;
+  };
+}
+
+const results = await db.search('query', {
+  filter: createFilter({
+    owners: ['billing', 'users'],
+    excludeDeprecated: true,
+    riskLevels: ['safe'],
+  }),
+});
+```
+
+## Non-Semantic Filtering
+
+For filtering without semantic search, use `filter()`:
+
+```ts title="src/non-semantic-filter.ts"
+// Get all tools by owner (no semantic ranking)
+const billingTools = toolIndex.filter(
+  (metadata) => metadata.owner === 'billing'
+);
+
+// Get all deprecated tools
+const deprecated = toolIndex.filter(
+  (metadata) => metadata.deprecated === true
+);
+
+// Get all high-risk tools
+const destructive = toolIndex.filter(
+  (metadata) => metadata.risk === 'destructive'
+);
+```
+
+<Note>
+`filter()` returns documents without semantic ranking - they're returned in insertion order. Use `search()` with a filter when you need semantic relevance.
+</Note>
+
+## Filter Performance
+
+Filters are applied **after** similarity calculation:
+
+1. Query embedding is generated
+2. All documents are scored by similarity
+3. Filters remove non-matching documents
+4. Top K results are returned
+
+<Tip>
+For large datasets with HNSW, VectoriaDB fetches extra candidates (3x topK) to account for filtering, ensuring you still get enough results.
+</Tip>
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Basic Search" icon="magnifying-glass" href="/vectoriadb/guides/search/basic-search">
+    Search fundamentals
+  </Card>
+  <Card title="Thresholds" icon="sliders" href="/vectoriadb/guides/search/similarity-thresholds">
+    Tune similarity
+  </Card>
+  <Card title="Performance" icon="gauge" href="/vectoriadb/guides/search/performance">
+    Optimize search
+  </Card>
+</CardGroup>

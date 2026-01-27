@@ -1,0 +1,140 @@
+---
+title: "Quickstart"
+description: "Build your first semantic search in minutes"
+icon: "rocket"
+---
+
+Build a semantic search index in just a few lines of code.
+
+## Basic Example
+
+```ts title="src/index.ts"
+import { VectoriaDB, DocumentMetadata } from 'vectoriadb';
+
+// Define your metadata shape
+interface ToolDocument extends DocumentMetadata {
+  toolName: string;
+  owner: string;
+  tags: string[];
+  risk: 'safe' | 'destructive';
+}
+
+// Create the database
+const toolIndex = new VectoriaDB<ToolDocument>({
+  cacheDir: './.cache/transformers',
+  defaultSimilarityThreshold: 0.4,
+});
+
+// Initialize (downloads model on first run)
+await toolIndex.initialize();
+
+// Add a document
+await toolIndex.add('users:list', 'List all users with pagination', {
+  id: 'users:list',
+  toolName: 'list',
+  owner: 'users',
+  tags: ['read'],
+  risk: 'safe',
+});
+
+// Search
+const results = await toolIndex.search('find users');
+console.log(results[0].metadata.toolName); // 'list'
+```
+
+<Check>
+You now have a working semantic search index. `initialize()` must run before `add`, `search`, or `update`. Calling it twice is safe because VectoriaDB short-circuits if it is already ready.
+</Check>
+
+## Step-by-Step Breakdown
+
+### 1. Define Metadata Interface
+
+```ts title="src/types.ts"
+import { DocumentMetadata } from 'vectoriadb';
+
+interface ToolDocument extends DocumentMetadata {
+  toolName: string;
+  owner: string;
+  tags: string[];
+  risk: 'safe' | 'destructive';
+}
+```
+
+This ensures type safety for all documents in your index.
+
+### 2. Create and Initialize
+
+```ts title="src/setup.ts"
+const db = new VectoriaDB<ToolDocument>({
+  cacheDir: './.cache/transformers',
+  defaultSimilarityThreshold: 0.4,
+});
+
+await db.initialize();
+```
+
+### 3. Add Documents
+
+```ts title="src/add.ts"
+// Single document
+await db.add('users:list', 'List all users with pagination', {
+  id: 'users:list',
+  toolName: 'list',
+  owner: 'users',
+  tags: ['read'],
+  risk: 'safe',
+});
+
+// Batch add
+await db.addMany([
+  { id: 'users:create', text: 'Create a new user', metadata: { /* ... */ } },
+  { id: 'users:delete', text: 'Delete a user', metadata: { /* ... */ } },
+]);
+```
+
+### 4. Search
+
+```ts title="src/search.ts"
+const results = await db.search('create account', {
+  topK: 5,
+  threshold: 0.4,
+  filter: (m) => m.risk === 'safe',
+});
+
+for (const result of results) {
+  console.log(`${result.metadata.toolName}: ${result.score.toFixed(2)}`);
+}
+```
+
+## Configuration Options
+
+| Option                       | Type    | Default                     | Description                    |
+| ---------------------------- | ------- | --------------------------- | ------------------------------ |
+| `modelName`                  | string  | `'Xenova/all-MiniLM-L6-v2'` | Embedding model to use         |
+| `cacheDir`                   | string  | `'./.cache/transformers'`   | Model cache directory          |
+| `dimensions`                 | number  | Auto-detected               | Vector dimensions              |
+| `defaultSimilarityThreshold` | number  | `0.3`                       | Minimum similarity score       |
+| `defaultTopK`                | number  | `10`                        | Default results limit          |
+| `useHNSW`                    | boolean | `false`                     | Enable HNSW index              |
+| `maxDocuments`               | number  | `100000`                    | Max documents (DoS protection) |
+| `maxDocumentSize`            | number  | `1000000`                   | Max document size in chars     |
+| `maxBatchSize`               | number  | `1000`                      | Max batch operation size       |
+| `verboseErrors`              | boolean | `true`                      | Enable detailed errors         |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Adding Documents" icon="plus" href="/vectoriadb/guides/core/adding-documents">
+    Learn about indexing options
+  </Card>
+  <Card title="Search" icon="magnifying-glass" href="/vectoriadb/guides/search/basic-search">
+    Master search queries
+  </Card>
+  <Card title="Persistence" icon="floppy-disk" href="/vectoriadb/guides/storage/overview">
+    Persist embeddings between restarts
+  </Card>
+  <Card title="HNSW Scaling" icon="chart-network" href="/vectoriadb/guides/scaling/hnsw-overview">
+    Scale to large datasets
+  </Card>
+</CardGroup>

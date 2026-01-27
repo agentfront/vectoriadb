@@ -1,0 +1,171 @@
+---
+title: "Configuration Interfaces"
+description: "VectoriaConfig and related configuration types"
+icon: "gear"
+---
+
+Configuration interfaces for VectoriaDB.
+
+## VectoriaConfig
+
+Main configuration interface for VectoriaDB constructor.
+
+```ts
+interface VectoriaConfig {
+  /**
+   * Name of the embedding model to use
+   * @default 'Xenova/all-MiniLM-L6-v2'
+   */
+  modelName?: string;
+
+  /**
+   * Directory to cache downloaded models
+   * @default './.cache/transformers'
+   */
+  cacheDir?: string;
+
+  /**
+   * Vector dimensions (auto-detected from model if not provided)
+   */
+  dimensions?: number;
+
+  /**
+   * Default similarity threshold for search results
+   * @default 0.3
+   */
+  defaultSimilarityThreshold?: number;
+
+  /**
+   * Maximum number of results to return by default
+   * @default 10
+   */
+  defaultTopK?: number;
+
+  /**
+   * Enable HNSW index for faster search
+   * @default false
+   */
+  useHNSW?: boolean;
+
+  /**
+   * HNSW index configuration
+   */
+  hnsw?: HNSWConfig;
+
+  /**
+   * Storage adapter for persisting embeddings
+   * @default MemoryStorageAdapter
+   */
+  storageAdapter?: StorageAdapter;
+
+  /**
+   * Tools hash for cache invalidation
+   */
+  toolsHash?: string;
+
+  /**
+   * Version string for cache compatibility
+   * @default '1.0.0'
+   */
+  version?: string;
+
+  /**
+   * Maximum number of documents allowed
+   * @default 100000
+   */
+  maxDocuments?: number;
+
+  /**
+   * Maximum size of a single document text (in characters)
+   * @default 1000000
+   */
+  maxDocumentSize?: number;
+
+  /**
+   * Maximum number of documents in a single batch
+   * @default 1000
+   */
+  maxBatchSize?: number;
+
+  /**
+   * Enable verbose error messages
+   * @default true
+   */
+  verboseErrors?: boolean;
+}
+```
+
+---
+
+## HNSWConfig
+
+Configuration for HNSW indexing.
+
+```ts
+interface HNSWConfig {
+  /**
+   * Maximum connections per node in layer > 0
+   * @default 16
+   */
+  M?: number;
+
+  /**
+   * Maximum connections for layer 0
+   * @default 32
+   */
+  M0?: number;
+
+  /**
+   * Candidate list size during construction
+   * @default 200
+   */
+  efConstruction?: number;
+
+  /**
+   * Candidate list size during search
+   * @default 50
+   */
+  efSearch?: number;
+}
+```
+
+---
+
+## StorageAdapterConfig
+
+Base configuration for storage adapters.
+
+```ts
+interface StorageAdapterConfig {
+  /**
+   * Namespace for storage keys
+   */
+  namespace?: string;
+
+  /**
+   * Whether to automatically save on changes
+   * @default false
+   */
+  autoSave?: boolean;
+
+  /**
+   * Interval for auto-save in milliseconds
+   * @default 60000
+   */
+  autoSaveInterval?: number;
+}
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Constructor" icon="plus" href="/vectoriadb/api-reference/vectoriadb/constructor">
+    Using config
+  </Card>
+  <Card title="Documents" icon="file-lines" href="/vectoriadb/api-reference/interfaces/documents">
+    Document interfaces
+  </Card>
+  <Card title="Search" icon="magnifying-glass" href="/vectoriadb/api-reference/interfaces/search">
+    Search interfaces
+  </Card>
+</CardGroup>
