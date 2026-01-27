@@ -1,0 +1,75 @@
+---
+title: "MemoryStorageAdapter"
+description: "In-memory storage adapter API reference"
+icon: "memory"
+---
+
+In-memory storage adapter (default, no persistence).
+
+## Constructor
+
+```ts
+constructor(config?: StorageAdapterConfig)
+```
+
+### StorageAdapterConfig
+
+```ts
+interface StorageAdapterConfig {
+  namespace?: string;
+}
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `namespace` | `string` | `'default'` | Namespace (for consistency) |
+
+## Example
+
+```ts
+import { VectoriaDB, MemoryStorageAdapter } from 'vectoriadb';
+
+const db = new VectoriaDB({
+  storageAdapter: new MemoryStorageAdapter({ namespace: 'tools' }),
+});
+
+// Or simply omit storageAdapter - MemoryStorageAdapter is the default
+const db = new VectoriaDB();
+```
+
+## Behavior
+
+- **No persistence**: Data is lost on restart
+- **No cache validation**: `hasValidCache()` always returns `false`
+- **Fast**: No I/O overhead
+
+## Methods
+
+| Method | Description |
+|--------|-------------|
+| `initialize()` | No-op |
+| `load()` | Returns stored data or null |
+| `save(data)` | Stores data in memory |
+| `hasValidCache(metadata)` | Always returns `false` |
+| `clear()` | Clears stored data |
+| `close()` | Clears stored data |
+
+## Use Cases
+
+- Development and testing
+- When re-indexing is fast enough
+- Serverless functions with bundled embeddings
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="FileStorageAdapter" icon="file" href="/vectoriadb/api-reference/storage-adapters/file-adapter">
+    File storage
+  </Card>
+  <Card title="RedisStorageAdapter" icon="database" href="/vectoriadb/api-reference/storage-adapters/redis-adapter">
+    Redis storage
+  </Card>
+  <Card title="Storage Guide" icon="floppy-disk" href="/vectoriadb/guides/storage/memory-adapter">
+    Memory adapter guide
+  </Card>
+</CardGroup>

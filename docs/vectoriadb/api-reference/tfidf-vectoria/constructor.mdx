@@ -1,0 +1,73 @@
+---
+title: "TFIDFVectoria Constructor"
+description: "Create a zero-dependency TF-IDF search index"
+icon: "plus"
+---
+
+Create a zero-dependency TF-IDF search index for keyword-based search.
+
+## Signature
+
+```ts
+constructor(config?: TFIDFConfig)
+```
+
+## Parameters
+
+### TFIDFConfig
+
+```ts
+interface TFIDFConfig {
+  defaultSimilarityThreshold?: number;
+  defaultTopK?: number;
+}
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `defaultSimilarityThreshold` | `number` | `0.0` | Default minimum similarity |
+| `defaultTopK` | `number` | `10` | Default results limit |
+
+## Example
+
+```ts
+import { TFIDFVectoria, DocumentMetadata } from 'vectoriadb';
+
+interface ToolDocument extends DocumentMetadata {
+  toolName: string;
+  category: string;
+}
+
+const db = new TFIDFVectoria<ToolDocument>({
+  defaultSimilarityThreshold: 0.0,
+  defaultTopK: 10,
+});
+```
+
+## Key Differences from VectoriaDB
+
+| Feature | TFIDFVectoria | VectoriaDB |
+|---------|---------------|------------|
+| Dependencies | Zero | transformers.js |
+| Initialization | Synchronous | Async |
+| Understanding | Keyword-based | Semantic |
+| Reindex required | Yes | No |
+
+## When to Use
+
+Use TFIDFVectoria when:
+- You need zero dependencies
+- Keyword matching is sufficient
+- No network access for model download
+- Small corpus (< 10K documents)
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="TFIDFVectoria Methods" icon="code" href="/vectoriadb/api-reference/tfidf-vectoria/methods">
+    All methods
+  </Card>
+  <Card title="TF-IDF Guide" icon="text" href="/vectoriadb/guides/alternatives/tfidf">
+    Usage guide
+  </Card>
+</CardGroup>

@@ -1,0 +1,83 @@
+---
+title: "FileStorageAdapter"
+description: "File-based storage adapter API reference"
+icon: "file"
+---
+
+File-based storage adapter for persisting embeddings to local disk.
+
+## Constructor
+
+```ts
+constructor(config?: FileStorageConfig)
+```
+
+### FileStorageConfig
+
+```ts
+interface FileStorageConfig {
+  cacheDir?: string;
+  namespace?: string;
+  fileName?: string;
+}
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `cacheDir` | `string` | `'./.cache/vectoriadb'` | Cache directory |
+| `namespace` | `string` | `'default'` | Namespace for isolation |
+| `fileName` | `string` | `'embeddings.json'` | Cache file name |
+
+## Example
+
+```ts
+import { VectoriaDB, FileStorageAdapter } from 'vectoriadb';
+
+const db = new VectoriaDB({
+  storageAdapter: new FileStorageAdapter({
+    cacheDir: './.cache/vectoriadb',
+    namespace: 'my-index',
+  }),
+});
+```
+
+## File Structure
+
+```
+.cache/vectoriadb/
+└── my-index/              # namespace
+    └── embeddings.json    # cache file
+```
+
+## Methods
+
+All storage adapters implement the `BaseStorageAdapter` interface:
+
+| Method | Description |
+|--------|-------------|
+| `initialize()` | Create cache directory |
+| `load()` | Load embeddings from file |
+| `save(data)` | Save embeddings to file |
+| `hasValidCache(metadata)` | Check if valid cache exists |
+| `clear()` | Delete cache file |
+| `close()` | Cleanup (no-op for file adapter) |
+
+## Security
+
+The adapter includes path traversal protection:
+- Namespace is sanitized to prevent directory escape
+- Resolved path is validated to stay within `cacheDir`
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="RedisStorageAdapter" icon="database" href="/vectoriadb/api-reference/storage-adapters/redis-adapter">
+    Redis storage
+  </Card>
+  <Card title="MemoryStorageAdapter" icon="memory" href="/vectoriadb/api-reference/storage-adapters/memory-adapter">
+    Memory storage
+  </Card>
+  <Card title="Storage Guide" icon="floppy-disk" href="/vectoriadb/guides/storage/file-adapter">
+    File adapter guide
+  </Card>
+</CardGroup>
