@@ -1,0 +1,101 @@
+---
+title: "Integrations Overview"
+description: "Integrate VectoriaDB with popular frameworks and tools"
+icon: "puzzle-piece"
+---
+
+VectoriaDB integrates seamlessly with popular frameworks and tools.
+
+## Available Integrations
+
+<CardGroup cols={2}>
+  <Card title="FrontMCP" icon="wand-magic-sparkles" href="/vectoriadb/integrations/frontmcp">
+    Intelligent tool discovery for MCP servers
+  </Card>
+  <Card title="Enclave" icon="shield" href="/vectoriadb/integrations/enclave">
+    Semantic search in sandboxed environments
+  </Card>
+  <Card title="Express" icon="node-js" href="/vectoriadb/integrations/express">
+    REST API integration with Express.js
+  </Card>
+  <Card title="Next.js" icon="react" href="/vectoriadb/integrations/nextjs">
+    Full-stack search with Next.js
+  </Card>
+</CardGroup>
+
+## Integration Pattern
+
+All integrations follow a similar pattern:
+
+```ts title="src/integration-pattern.ts"
+import { VectoriaDB, DocumentMetadata } from 'vectoriadb';
+
+// 1. Define your metadata interface
+interface MyDocument extends DocumentMetadata {
+  title: string;
+  category: string;
+}
+
+// 2. Create a singleton instance
+let db: VectoriaDB<MyDocument> | null = null;
+
+export async function getDB() {
+  if (db) return db;
+
+  db = new VectoriaDB<MyDocument>({
+    // Configuration...
+  });
+
+  await db.initialize();
+  return db;
+}
+
+// 3. Use in your application
+export async function search(query: string) {
+  const database = await getDB();
+  return database.search(query);
+}
+```
+
+## Middleware Pattern
+
+Create reusable middleware for VectoriaDB:
+
+```ts title="src/middleware/vectoriadb.ts"
+import { Request, Response, NextFunction } from 'express';
+import { VectoriaDB } from 'vectoriadb';
+
+declare global {
+  namespace Express {
+    interface Request {
+      vectoriadb?: VectoriaDB;
+    }
+  }
+}
+
+export function vectoriadbMiddleware(db: VectoriaDB) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    req.vectoriadb = db;
+    next();
+  };
+}
+
+// Usage
+app.use(vectoriadbMiddleware(productIndex));
+
+app.get('/search', async (req, res) => {
+  const results = await req.vectoriadb!.search(req.query.q as string);
+  res.json(results);
+});
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Tool Discovery" icon="wand-magic-sparkles" href="/vectoriadb/guides/use-cases/tool-discovery">
+    Complete tool discovery guide
+  </Card>
+  <Card title="Deployment" icon="rocket" href="/vectoriadb/deployment/production-config">
+    Production deployment
+  </Card>
+</CardGroup>

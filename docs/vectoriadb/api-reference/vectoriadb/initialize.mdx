@@ -1,0 +1,99 @@
+---
+title: "initialize()"
+description: "Initialize the VectoriaDB instance"
+icon: "play"
+---
+
+Initialize the vector database. Must be called before any other operations.
+
+## Signature
+
+```ts
+async initialize(): Promise<void>
+```
+
+## Description
+
+Initializes the database by:
+1. Loading and initializing the embedding model
+2. Initializing the storage adapter
+3. Attempting to load cached embeddings from storage
+
+## Example
+
+```ts
+const db = new VectoriaDB<MyDocument>();
+
+await db.initialize();
+
+// Now you can use the database
+await db.add('id', 'text', metadata);
+```
+
+## Behavior
+
+- **Idempotent**: Safe to call multiple times. Subsequent calls are no-ops if already initialized.
+- **Async**: Downloads model on first run (~22 MB).
+- **Auto-loads cache**: Automatically loads from storage if valid cache exists.
+
+## Error Handling
+
+```ts
+try {
+  await db.initialize();
+} catch (error) {
+  if (error instanceof ConfigurationError) {
+    console.error('Invalid configuration:', error.message);
+  } else if (error instanceof StorageError) {
+    console.error('Storage initialization failed:', error.message);
+  }
+}
+```
+
+## Related Methods
+
+| Method | Description |
+|--------|-------------|
+| `isInitialized()` | Check if database is initialized |
+| `saveToStorage()` | Manually save to storage |
+| `loadFromStorage()` | Manually load from storage |
+
+## Example: Startup Pattern
+
+```ts
+async function startupVectoriaDB() {
+  const db = new VectoriaDB<ToolDocument>({
+    storageAdapter: new FileStorageAdapter({
+      cacheDir: './.cache/vectoriadb',
+    }),
+    toolsHash: SerializationUtils.createToolsHash(documents),
+  });
+
+  await db.initialize();
+
+  // Check if cache was loaded
+  if (db.size() === 0) {
+    console.log('No cache - indexing documents...');
+    await db.addMany(documents);
+    await db.saveToStorage();
+  } else {
+    console.log(`Loaded ${db.size()} documents from cache`);
+  }
+
+  return db;
+}
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Constructor" icon="plus" href="/vectoriadb/api-reference/vectoriadb/constructor">
+    Create instance
+  </Card>
+  <Card title="add()" icon="plus" href="/vectoriadb/api-reference/vectoriadb/add">
+    Add documents
+  </Card>
+  <Card title="Storage" icon="floppy-disk" href="/vectoriadb/api-reference/vectoriadb/storage-methods">
+    Storage operations
+  </Card>
+</CardGroup>

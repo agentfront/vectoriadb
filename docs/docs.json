@@ -55,9 +55,9 @@
           {
             "group": "Get Started",
             "pages": [
-              "get-started/welcome",
-              "get-started/installation",
-              "get-started/quickstart"
+              "docs/vectoriadb/get-started/welcome",
+              "docs/vectoriadb/get-started/installation",
+              "docs/vectoriadb/get-started/quickstart"
             ]
           },
           {
@@ -67,40 +67,40 @@
                 "group": "Document Operations",
                 "icon": "database",
                 "pages": [
-                  "guides/core/indexing-basics",
-                  "guides/core/adding-documents",
-                  "guides/core/updating-documents",
-                  "guides/core/removing-documents"
+                  "docs/vectoriadb/guides/core/indexing-basics",
+                  "docs/vectoriadb/guides/core/adding-documents",
+                  "docs/vectoriadb/guides/core/updating-documents",
+                  "docs/vectoriadb/guides/core/removing-documents"
                 ]
               },
               {
                 "group": "Search",
                 "icon": "magnifying-glass",
                 "pages": [
-                  "guides/search/basic-search",
-                  "guides/search/filtering",
-                  "guides/search/similarity-thresholds",
-                  "guides/search/performance"
+                  "docs/vectoriadb/guides/search/basic-search",
+                  "docs/vectoriadb/guides/search/filtering",
+                  "docs/vectoriadb/guides/search/similarity-thresholds",
+                  "docs/vectoriadb/guides/search/performance"
                 ]
               },
               {
                 "group": "Storage",
                 "icon": "floppy-disk",
                 "pages": [
-                  "guides/storage/overview",
-                  "guides/storage/file-adapter",
-                  "guides/storage/redis-adapter",
-                  "guides/storage/memory-adapter",
-                  "guides/storage/cache-invalidation"
+                  "docs/vectoriadb/guides/storage/overview",
+                  "docs/vectoriadb/guides/storage/file-adapter",
+                  "docs/vectoriadb/guides/storage/redis-adapter",
+                  "docs/vectoriadb/guides/storage/memory-adapter",
+                  "docs/vectoriadb/guides/storage/cache-invalidation"
                 ]
               },
               {
                 "group": "Scaling",
                 "icon": "chart-network",
                 "pages": [
-                  "guides/scaling/hnsw-overview",
-                  "guides/scaling/hnsw-configuration",
-                  "guides/scaling/hnsw-tuning"
+                  "docs/vectoriadb/guides/scaling/hnsw-overview",
+                  "docs/vectoriadb/guides/scaling/hnsw-configuration",
+                  "docs/vectoriadb/guides/scaling/hnsw-tuning"
                 ]
               }
             ]
@@ -108,48 +108,48 @@
           {
             "group": "Alternatives",
             "pages": [
-              "guides/alternatives/tfidf"
+              "docs/vectoriadb/guides/alternatives/tfidf"
             ]
           },
           {
             "group": "Use Cases",
             "pages": [
-              "guides/use-cases/tool-discovery"
+              "docs/vectoriadb/guides/use-cases/tool-discovery"
             ]
           },
           {
             "group": "Deployment",
             "icon": "rocket",
             "pages": [
-              "deployment/production-config",
-              "deployment/docker",
-              "deployment/environment-variables",
-              "deployment/health-monitoring"
+              "docs/vectoriadb/deployment/production-config",
+              "docs/vectoriadb/deployment/docker",
+              "docs/vectoriadb/deployment/environment-variables",
+              "docs/vectoriadb/deployment/health-monitoring"
             ]
           },
           {
             "group": "Integrations",
             "icon": "puzzle-piece",
             "pages": [
-              "integrations/overview",
-              "integrations/frontmcp",
-              "integrations/enclave",
-              "integrations/express",
-              "integrations/nextjs"
+              "docs/vectoriadb/integrations/overview",
+              "docs/vectoriadb/integrations/frontmcp",
+              "docs/vectoriadb/integrations/enclave",
+              "docs/vectoriadb/integrations/express",
+              "docs/vectoriadb/integrations/nextjs"
             ]
           },
           {
             "group": "Troubleshooting",
             "icon": "wrench",
             "pages": [
-              "troubleshooting/faq",
-              "troubleshooting/common-errors"
+              "docs/vectoriadb/troubleshooting/faq",
+              "docs/vectoriadb/troubleshooting/common-errors"
             ]
           },
           {
             "group": "Updates",
             "pages": [
-              "updates"
+              "docs/vectoriadb/updates"
             ]
           }
         ]
@@ -160,55 +160,55 @@
           {
             "group": "Overview",
             "pages": [
-              "api-reference/overview"
+              "docs/vectoriadb/api-reference/overview"
             ]
           },
           {
             "group": "VectoriaDB",
             "icon": "database",
             "pages": [
-              "api-reference/vectoriadb/constructor",
-              "api-reference/vectoriadb/initialize",
-              "api-reference/vectoriadb/add",
-              "api-reference/vectoriadb/search",
-              "api-reference/vectoriadb/update",
-              "api-reference/vectoriadb/remove",
-              "api-reference/vectoriadb/query-methods",
-              "api-reference/vectoriadb/storage-methods"
+              "docs/vectoriadb/api-reference/vectoriadb/constructor",
+              "docs/vectoriadb/api-reference/vectoriadb/initialize",
+              "docs/vectoriadb/api-reference/vectoriadb/add",
+              "docs/vectoriadb/api-reference/vectoriadb/search",
+              "docs/vectoriadb/api-reference/vectoriadb/update",
+              "docs/vectoriadb/api-reference/vectoriadb/remove",
+              "docs/vectoriadb/api-reference/vectoriadb/query-methods",
+              "docs/vectoriadb/api-reference/vectoriadb/storage-methods"
             ]
           },
           {
             "group": "TFIDFVectoria",
             "icon": "text",
             "pages": [
-              "api-reference/tfidf-vectoria/constructor",
-              "api-reference/tfidf-vectoria/methods"
+              "docs/vectoriadb/api-reference/tfidf-vectoria/constructor",
+              "docs/vectoriadb/api-reference/tfidf-vectoria/methods"
             ]
           },
           {
             "group": "Storage Adapters",
             "icon": "floppy-disk",
             "pages": [
-              "api-reference/storage-adapters/file-adapter",
-              "api-reference/storage-adapters/redis-adapter",
-              "api-reference/storage-adapters/memory-adapter"
+              "docs/vectoriadb/api-reference/storage-adapters/file-adapter",
+              "docs/vectoriadb/api-reference/storage-adapters/redis-adapter",
+              "docs/vectoriadb/api-reference/storage-adapters/memory-adapter"
             ]
           },
           {
             "group": "Interfaces",
             "icon": "code",
             "pages": [
-              "api-reference/interfaces/config",
-              "api-reference/interfaces/documents",
-              "api-reference/interfaces/search",
-              "api-reference/interfaces/storage"
+              "docs/vectoriadb/api-reference/interfaces/config",
+              "docs/vectoriadb/api-reference/interfaces/documents",
+              "docs/vectoriadb/api-reference/interfaces/search",
+              "docs/vectoriadb/api-reference/interfaces/storage"
             ]
           },
           {
             "group": "Errors",
             "icon": "triangle-exclamation",
             "pages": [
-              "api-reference/errors"
+              "docs/vectoriadb/api-reference/errors"
             ]
           }
         ]

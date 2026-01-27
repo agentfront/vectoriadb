@@ -1,0 +1,122 @@
+---
+title: "Basic Search"
+description: "Perform semantic search queries in VectoriaDB"
+icon: "magnifying-glass"
+---
+
+Learn how to perform semantic searches with natural language queries.
+
+## Simple Search
+
+```ts title="src/basic-search.ts"
+const results = await toolIndex.search('reset a billing password');
+
+for (const result of results) {
+  console.log(`${result.metadata.toolName} (${result.score.toFixed(2)})`);
+}
+```
+
+## Search Options
+
+```ts title="src/search-options.ts"
+const matches = await toolIndex.search('reset a billing password', {
+  topK: 5,                    // Maximum results (default: 10)
+  threshold: 0.45,            // Minimum similarity (default: 0.3)
+  filter: (metadata) =>       // Metadata filter function
+    metadata.owner === 'billing' &&
+    !metadata.tags.includes('deprecated'),
+  includeVector: false,       // Include raw vectors in results
+});
+```
+
+### Options Reference
+
+| Option          | Type       | Default | Description                          |
+| --------------- | ---------- | ------- | ------------------------------------ |
+| `topK`          | `number`   | `10`    | Maximum results to return            |
+| `threshold`     | `number`   | `0.3`   | Minimum similarity score (0-1)       |
+| `filter`        | `function` | -       | Filter function for metadata         |
+| `includeVector` | `boolean`  | `false` | Include raw vectors in results       |
+
+## Search Results
+
+Each result contains:
+
+```ts title="src/types/search-result.ts"
+interface SearchResult<T extends DocumentMetadata> {
+  id: string;           // Document ID
+  score: number;        // Similarity score (0-1)
+  metadata: T;          // Document metadata
+  text: string;         // Original document text
+  vector?: number[];    // Embedding vector (if includeVector: true)
+}
+```
+
+## Understanding Scores
+
+Scores range from 0 to 1:
+- **0.8-1.0**: Very high similarity (nearly identical meaning)
+- **0.6-0.8**: High similarity (strongly related)
+- **0.4-0.6**: Moderate similarity (related concepts)
+- **0.2-0.4**: Low similarity (loosely related)
+- **0.0-0.2**: Very low similarity (probably unrelated)
+
+```ts title="src/interpret-scores.ts"
+const results = await db.search('create user account');
+
+for (const result of results) {
+  const confidence = result.score >= 0.6 ? 'High'
+    : result.score >= 0.4 ? 'Medium'
+    : 'Low';
+
+  console.log(`${result.id}: ${result.score.toFixed(2)} (${confidence})`);
+}
+```
+
+## Error Handling
+
+```ts title="src/error-handling.ts"
+import { QueryValidationError, VectoriaNotInitializedError } from 'vectoriadb';
+
+try {
+  const results = await toolIndex.search(query, { topK: -1 });
+} catch (error) {
+  if (error instanceof QueryValidationError) {
+    console.error('Invalid search parameters:', error.message);
+  } else if (error instanceof VectoriaNotInitializedError) {
+    console.error('Database not initialized');
+    await toolIndex.initialize();
+  }
+}
+```
+
+## Empty Results
+
+Common reasons for empty results:
+1. **Threshold too high** - Lower the `threshold` option
+2. **No matching documents** - Check that documents are indexed
+3. **Filter too restrictive** - Review your `filter` function
+
+```ts title="src/debug-empty.ts"
+// Debug: search without filters and low threshold
+const results = await db.search(query, {
+  threshold: 0.1,
+  topK: 20,
+  // No filter
+});
+console.log('Found:', results.length);
+```
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Filtering" icon="filter" href="/vectoriadb/guides/search/filtering">
+    Filter search results
+  </Card>
+  <Card title="Thresholds" icon="sliders" href="/vectoriadb/guides/search/similarity-thresholds">
+    Tune similarity thresholds
+  </Card>
+  <Card title="Performance" icon="gauge" href="/vectoriadb/guides/search/performance">
+    Optimize search performance
+  </Card>
+</CardGroup>
