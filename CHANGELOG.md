@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.2] - 2026-01-28
+### Added
+- Added 'Updates' section under 'Get Started' in the Documentation dropdown.
+- Added icons for 'Documentation' and 'API Reference' dropdowns.
+
+### Changed
+- Consolidated entries under 'Alternatives' and 'Use Cases' groups into single lines for clarity.
+
+### Fixed
+- Adjusted the presentation of groups and pages to improve navigability and reduce clutter.
 ## [2.1.0] - 2026-01-27
 
 ## [2.0.2] - 2026-01-07
