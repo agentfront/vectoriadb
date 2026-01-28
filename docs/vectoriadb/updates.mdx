@@ -1,5 +1,6 @@
 ---
 title: 'Updates'
+description: "Changelog and release history for VectoriaDB"
 slug: 'updates'
 icon: 'sparkles'
 mode: 'center'
@@ -21,23 +22,12 @@ mode: 'center'
     </Warning>
   </Card>
 
-  <Card
-    title="VectoriaDB v2.0.0: Optional transformers and lazy loading"
-    href="https://github.com/agentfront/vectoriadb/releases/tag/v2.0.0"
-    cta="View full changelog"
-  >
-    **Optional Peer Dependencies** – `@huggingface/transformers` is now optional, enabling smaller bundle sizes when using TF-IDF only.
 
-    **Lazy Loading** – Transformer embeddings now lazy-load the transformers module.
 
-    **Custom Pipeline Injection** – Added `EmbeddingService.setTransformersModule()` and `clearTransformersModule()` for testing.
 
-    **Migration:**
     ```bash
     npm install @huggingface/transformers
     ```
-  </Card>
-</Update>
 
 <Update label="v1.0.0" description="November 2025" tags={["Releases"]}>
   <Card

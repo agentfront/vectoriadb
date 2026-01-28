@@ -41,20 +41,53 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            // Get the workflow run to check when it completed
+            const workflowRun = context.payload.workflow_run;
+            const workflowRunCreatedAt = new Date(workflowRun.created_at);
+
             // Get the most recent release
             const { data: releases } = await github.rest.repos.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              per_page: 1
+              per_page: 5
             });
 
             if (releases.length === 0) {
-              core.setFailed('No releases found');
+              console.log('No releases found - likely a dry run. Skipping docs sync.');
+              core.setOutput('should_trigger', 'false');
               return;
             }
 
-            const release = releases[0];
+            // Find a release created after the workflow run started (within 1 hour)
+            const recentRelease = releases.find(r => {
+              const releaseCreatedAt = new Date(r.created_at);
+              const timeDiff = releaseCreatedAt - workflowRunCreatedAt;
+              // Release should be created after workflow started but within 1 hour
+              return timeDiff >= 0 && timeDiff < 3600000;
+            });
+
+            if (!recentRelease) {
+              console.log('No release was created by this workflow run - likely a dry run. Skipping docs sync.');
+              core.setOutput('should_trigger', 'false');
+              return;
+            }
+
+            const release = recentRelease;
             const tag = release.tag_name;
+
+            // Check if this is a pre-release (rc/beta) - skip docs sync for pre-releases
+            if (release.prerelease) {
+              console.log(`Release ${tag} is a pre-release. Skipping docs sync.`);
+              core.setOutput('should_trigger', 'false');
+              return;
+            }
+
+            // Also check tag name for rc/beta patterns (extra safety)
+            if (tag.includes('-rc.') || tag.includes('-beta.')) {
+              console.log(`Release ${tag} appears to be a pre-release based on tag name. Skipping docs sync.`);
+              core.setOutput('should_trigger', 'false');
+              return;
+            }
 
             // Extract version minor from tag (e.g., "v2.1.0" -> "2.1")
             const versionMatch = tag.match(/^v?(\d+)\.(\d+)/);
@@ -69,6 +102,7 @@ jobs:
 
             const sha = ref.object.sha;
 
+            core.setOutput('should_trigger', 'true');
             core.setOutput('tag', tag);
             core.setOutput('sha', sha);
             core.setOutput('version_minor', versionMinor);
@@ -76,8 +110,10 @@ jobs:
             console.log(`Release: ${tag}`);
             console.log(`SHA: ${sha}`);
             console.log(`Version minor: ${versionMinor}`);
+            console.log('Will trigger docs sync for stable release.');
 
       - name: Trigger docs sync
+        if: steps.release.outputs.should_trigger == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.DOCS_SYNC_TOKEN }}
@@ -117,11 +153,19 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Docs Sync Triggered" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Repository:** ${{ env.REPO_NAME }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag:** ${{ steps.release.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **SHA:** ${{ steps.release.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version:** ${{ steps.release.outputs.version_minor }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The [agentfront-docs](https://github.com/agentfront/docs) repository will sync the documentation shortly." >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.release.outputs.should_trigger }}" == "true" ]; then
+            echo "## Docs Sync Triggered" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Repository:** ${{ env.REPO_NAME }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Tag:** ${{ steps.release.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **SHA:** ${{ steps.release.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version:** ${{ steps.release.outputs.version_minor }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The [agentfront-docs](https://github.com/agentfront/docs) repository will sync the documentation shortly." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Docs Sync Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Docs sync was skipped. This happens when:" >> $GITHUB_STEP_SUMMARY
+            echo "- The publish workflow was a dry run (no release created)" >> $GITHUB_STEP_SUMMARY
+            echo "- The release is a pre-release (rc/beta)" >> $GITHUB_STEP_SUMMARY
+          fi

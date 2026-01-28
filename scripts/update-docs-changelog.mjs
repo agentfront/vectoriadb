@@ -3,7 +3,9 @@
  * Updates docs/vectoriadb/updates.mdx with a new Card component for a release.
  *
  * Usage:
- *   node scripts/update-docs-changelog.mjs --version "v2.0.3" --version-minor "2.0" --card-mdx "<Card>...</Card>"
+ *   node scripts/update-docs-changelog.mjs --version "v2.0.3" --version-minor "2.0" --card-mdx-file "/tmp/card.mdx"
+ *
+ * The card-mdx-file should contain a single <Card>...</Card> component.
  */
 
 import fs from 'fs';
@@ -13,12 +15,22 @@ const { values } = parseArgs({
   options: {
     version: { type: 'string' },
     'version-minor': { type: 'string' },
-    'card-mdx': { type: 'string' },
+    'card-mdx-file': { type: 'string' },
   },
 });
 
-if (!values.version || !values['version-minor'] || !values['card-mdx']) {
-  console.error('Usage: update-docs-changelog.mjs --version <version> --version-minor <minor> --card-mdx <mdx>');
+if (!values.version || !values['version-minor'] || !values['card-mdx-file']) {
+  console.error(
+    'Usage: update-docs-changelog.mjs --version <version> --version-minor <minor> --card-mdx-file <file>'
+  );
+  process.exit(1);
+}
+
+// Read card MDX from file to avoid shell escaping issues
+const cardMdx = fs.readFileSync(values['card-mdx-file'], 'utf8').trim();
+
+if (!cardMdx.includes('<Card')) {
+  console.error('Error: card-mdx-file must contain a <Card> component');
   process.exit(1);
 }
 
@@ -36,8 +48,7 @@ if (match) {
   // Add new Card to existing Update block (insert after opening tag)
   const existingBlock = match[0];
   const openTagEnd = existingBlock.indexOf('>') + 1;
-  const newBlock =
-    existingBlock.slice(0, openTagEnd) + '\n  ' + values['card-mdx'] + '\n' + existingBlock.slice(openTagEnd);
+  const newBlock = existingBlock.slice(0, openTagEnd) + '\n  ' + cardMdx + '\n' + existingBlock.slice(openTagEnd);
   newContent = content.replace(existingBlock, newBlock);
 } else {
   // Create new Update block after frontmatter
@@ -54,7 +65,7 @@ if (match) {
   const newUpdateBlock = `
 
 <Update label="${versionLabel}" description="${monthYear}" tags={["Releases"]}>
-  ${values['card-mdx']}
+  ${cardMdx}
 </Update>
 `;
   newContent = content.slice(0, frontmatterEnd) + newUpdateBlock + content.slice(frontmatterEnd);
