@@ -172,7 +172,6 @@ jobs:
           script: |
             const fs = require('fs');
             const diff = fs.readFileSync('/tmp/diff.txt', 'utf8');
-            const existingUpdates = fs.readFileSync('docs/vectoriadb/updates.mdx', 'utf8');
             const releaseDate = new Date().toISOString().split('T')[0];
             const version = process.env.VERSION;
             const versionNum = version.replace('v', '');
@@ -231,51 +230,18 @@ jobs:
             core.setOutput('changelog', result.changelog);
             core.setOutput('has_card_mdx', result.cardMdx ? 'true' : 'false');
 
-      - name: Update CHANGELOG.md
-        if: ${{ inputs.dry_run != true && inputs.release_type == 'stable' && steps.ai_changelog.outputs.changelog }}
-        run: |
-          node -e "
-            const fs = require('fs');
-            const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
-            const newEntry = process.env.CHANGELOG_ENTRY;
-            const lines = changelog.split('\n');
-            const unreleasedIdx = lines.findIndex(l => l.startsWith('## [Unreleased]'));
-            let insertIdx = unreleasedIdx + 1;
-            while (insertIdx < lines.length && !lines[insertIdx].match(/^## \[\d/)) insertIdx++;
-            if (lines[insertIdx - 1].trim() !== '') { lines.splice(insertIdx, 0, ''); insertIdx++; }
-            lines.splice(insertIdx, 0, newEntry);
-            fs.writeFileSync('CHANGELOG.md', lines.join('\n'));
-          "
-        env:
-          CHANGELOG_ENTRY: ${{ steps.ai_changelog.outputs.changelog }}
-
-      - name: Update updates.mdx
-        if: ${{ inputs.dry_run != true && inputs.release_type == 'stable' && steps.ai_changelog.outputs.has_card_mdx == 'true' }}
-        run: |
-          node scripts/update-docs-changelog.mjs \
-            --version "v${{ steps.version.outputs.version }}" \
-            --version-minor "${{ steps.context.outputs.release_line }}" \
-            --card-mdx-file "/tmp/card-mdx.txt"
-
       - name: Update package version
         if: ${{ inputs.dry_run != true }}
         run: |
           npx nx release version "${{ steps.version.outputs.version }}" \
             --projects=vectoriadb --git-tag=false --git-commit=false
 
-      - name: Commit version bump and docs
+      - name: Commit version bump
         if: ${{ inputs.dry_run != true }}
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
-            git commit -m "$(cat <<'EOF'
-          chore(release): v${{ steps.version.outputs.version }}
-
-          - Bump version to ${{ steps.version.outputs.version }}
-          - Update CHANGELOG.md
-          - Update docs/vectoriadb/updates.mdx
-          EOF
-          )"
+            git commit -m "chore(release): v${{ steps.version.outputs.version }}"
             git push origin HEAD
           fi
 
@@ -315,6 +281,60 @@ jobs:
 
           echo "Created and pushed tag: $TAG"
 
+      - name: Prepare release body
+        id: release_body
+        env:
+          CHANGELOG: ${{ steps.ai_changelog.outputs.changelog }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          RELEASE_TYPE="${{ steps.version.outputs.release_type }}"
+          RELEASE_LINE="${{ steps.context.outputs.release_line }}"
+          BRANCH="${{ steps.context.outputs.branch }}"
+          IS_PRERELEASE="${{ steps.version.outputs.is_prerelease }}"
+
+          # Start building the release body
+          {
+            echo "## Release v${VERSION}"
+            echo ""
+            echo "**Release type:** ${RELEASE_TYPE}"
+            echo "**Release line:** ${RELEASE_LINE}.x"
+            echo "**Branch:** ${BRANCH}"
+          } > /tmp/release-body.md
+
+          # Add AI-generated changelog if available
+          if [ -f /tmp/card-mdx.txt ] && [ -s /tmp/card-mdx.txt ] && [ -n "$CHANGELOG" ]; then
+            echo "" >> /tmp/release-body.md
+            echo "$CHANGELOG" >> /tmp/release-body.md
+          fi
+
+          # Add installation section
+          {
+            echo ""
+            echo "### Installation"
+            echo ""
+            echo '```bash'
+            echo "npm install vectoriadb@${VERSION}"
+            echo '```'
+          } >> /tmp/release-body.md
+
+          # Add pre-release note if applicable
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            echo "" >> /tmp/release-body.md
+            echo "> **Note:** This is a pre-release version." >> /tmp/release-body.md
+          fi
+
+          # Add Card MDX as hidden comment for docs sync (only for stable releases)
+          # NOTE: Content is sanitized to prevent --> from breaking the HTML comment.
+          # Consumer must reverse: replace "--&gt;" with "-->" after extraction.
+          if [ -f /tmp/card-mdx.txt ] && [ -s /tmp/card-mdx.txt ]; then
+            echo "" >> /tmp/release-body.md
+            echo "<!--" >> /tmp/release-body.md
+            echo "CARD_MDX_START" >> /tmp/release-body.md
+            sed 's/-->/--\&gt;/g' /tmp/card-mdx.txt >> /tmp/release-body.md
+            echo "CARD_MDX_END" >> /tmp/release-body.md
+            echo "-->" >> /tmp/release-body.md
+          fi
+
       - name: Create GitHub Release
         if: ${{ inputs.dry_run != true }}
         uses: softprops/action-gh-release@v2
@@ -322,21 +342,8 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }}
           prerelease: ${{ steps.version.outputs.is_prerelease }}
-          generate_release_notes: true
-          body: |
-            ## Release v${{ steps.version.outputs.version }}
-
-            **Release type:** ${{ steps.version.outputs.release_type }}
-            **Release line:** ${{ steps.context.outputs.release_line }}.x
-            **Branch:** ${{ steps.context.outputs.branch }}
-
-            ### Installation
-
-            ```bash
-            npm install vectoriadb@${{ steps.version.outputs.version }}
-            ```
-
-            ${{ steps.version.outputs.is_prerelease == 'true' && '> **Note:** This is a pre-release version.' || '' }}
+          generate_release_notes: false
+          body_path: /tmp/release-body.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
