@@ -91,8 +91,8 @@ export class EmbeddingService {
       this.pipeline = await pipelineFn('feature-extraction', this.modelName, {
         // Use local models directory to cache models
         cache_dir: this.cacheDir,
-        // // Don't require progress bars in production
-        // progress_callback: null,
+        // Explicitly set dtype to suppress "dtype not specified" warning from ONNX runtime
+        dtype: 'fp32',
       });
 
       // Test the pipeline to get dimensions
@@ -193,5 +193,24 @@ export class EmbeddingService {
    */
   isReady(): boolean {
     return this.isInitialized;
+  }
+
+  /**
+   * Dispose the embedding pipeline and release ONNX native resources.
+   * Call this before process exit to avoid native mutex crashes.
+   */
+  async dispose(): Promise<void> {
+    if (this.pipeline) {
+      try {
+        if (typeof this.pipeline.dispose === 'function') {
+          await this.pipeline.dispose();
+        }
+      } catch {
+        // Best-effort cleanup — swallow errors during shutdown
+      }
+      this.pipeline = null;
+    }
+    this.isInitialized = false;
+    this.initializationPromise = null;
   }
 }

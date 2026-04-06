@@ -766,6 +766,7 @@ export class VectoriaDB<T extends DocumentMetadata = DocumentMetadata> {
    * Call this when shutting down to cleanup resources
    */
   async close(): Promise<void> {
+    await this.embeddingService.dispose();
     await this.storageAdapter.close();
   }
 }
