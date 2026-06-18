@@ -194,6 +194,25 @@ export interface SearchOptions<T extends DocumentMetadata = DocumentMetadata> {
   filter?: FilterFunction<T>;
 
   /**
+   * Anti-query / negative search term(s). A document's score is reduced by its
+   * similarity to these — so results that match the positive `query` but are
+   * ALSO close to a negative term are demoted (and fall below `threshold` when
+   * the negative dominates). Use to express "find X but NOT Y".
+   *
+   * Score = sim(doc, query) − {@link SearchOptions.negativeWeight} · maxᵢ sim(doc, negativeᵢ).
+   *
+   * @example db.search('add a policy', { negativeQuery: 'enforcement' })
+   */
+  negativeQuery?: string | string[];
+
+  /**
+   * Weight applied to the negative-similarity penalty. `0` disables it; `1`
+   * (default) subtracts the full anti-query similarity; `>1` penalizes harder.
+   * @default 1
+   */
+  negativeWeight?: number;
+
+  /**
    * Whether to include the vector in results
    * @default false
    */
@@ -215,7 +234,11 @@ export interface SearchResult<T extends DocumentMetadata = DocumentMetadata> {
   metadata: T;
 
   /**
-   * Cosine similarity score (0-1, higher is better)
+   * Relevance score (higher is better). Bounds depend on the scoring method:
+   * - cosine similarity (default) is roughly in [0, 1];
+   * - BM25 scores are unbounded (a sum of term weights);
+   * - an anti-query (`negativeQuery`) subtracts a penalty, so scores can go
+   *   negative under either method.
    */
   score: number;
 

@@ -15,7 +15,13 @@ export * from './interfaces';
 
 // TF-IDF based lightweight vector database (zero external dependencies)
 export { TFIDFVectoria } from './vectoria-tfidf';
-export type { TFIDFDocument, TFIDFVectoriaConfig } from './vectoria-tfidf';
+export type {
+  TFIDFDocument,
+  TFIDFVectoriaConfig,
+  TFIDFScoring,
+  BM25Params,
+  TFIDFSnapshot,
+} from './vectoria-tfidf';
 export { TFIDFEmbeddingService } from './tfidf.embedding.service';
 
 // Storage adapters

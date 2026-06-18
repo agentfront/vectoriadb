@@ -1,6 +1,34 @@
-import { cosineSimilarity, normalizeVector, euclideanDistance, dotProduct } from '../similarity.utils';
+import {
+  cosineSimilarity,
+  normalizeVector,
+  euclideanDistance,
+  dotProduct,
+  maxNegativeSimilarity,
+} from '../similarity.utils';
 
 describe('Similarity Utils', () => {
+  describe('maxNegativeSimilarity', () => {
+    test('returns 0 when there are no negative vectors', () => {
+      expect(maxNegativeSimilarity(new Float32Array([1, 0, 0]), [])).toBe(0);
+    });
+
+    test('returns the greatest similarity across the negatives', () => {
+      const doc = new Float32Array([1, 1, 0]);
+      const negatives = [
+        new Float32Array([0, 0, 1]), // orthogonal → 0
+        new Float32Array([1, 1, 0]), // identical → 1
+        new Float32Array([1, 0, 0]), // ~0.707
+      ];
+      expect(maxNegativeSimilarity(doc, negatives)).toBeCloseTo(1.0, 5);
+    });
+
+    test('clamps to 0 (never negative) for purely opposing negatives', () => {
+      const doc = new Float32Array([1, 0, 0]);
+      const negatives = [new Float32Array([-1, 0, 0])]; // cosine -1
+      expect(maxNegativeSimilarity(doc, negatives)).toBe(0);
+    });
+  });
+
   describe('cosineSimilarity', () => {
     test('should return 1 for identical vectors', () => {
       const a = new Float32Array([1, 2, 3, 4]);
