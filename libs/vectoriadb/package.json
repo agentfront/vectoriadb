@@ -33,12 +33,16 @@
     ".": {
       "development": "./src/index.ts",
       "types": "./dist/src/index.d.ts",
-      "worker": "./dist/src/worker.js",
-      "browser": "./dist/src/worker.js",
       "import": "./dist/src/index.js",
       "default": "./dist/src/index.js"
     },
     "./worker": {
+      "development": "./src/worker.ts",
+      "types": "./dist/src/worker.d.ts",
+      "import": "./dist/src/worker.js",
+      "default": "./dist/src/worker.js"
+    },
+    "./browser": {
       "development": "./src/worker.ts",
       "types": "./dist/src/worker.d.ts",
       "import": "./dist/src/worker.js",
