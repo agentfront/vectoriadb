@@ -1,4 +1,3 @@
-import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { DocumentMetadata } from '../interfaces';
 import type { StorageAdapterConfig, StoredData } from './adapter.interface';
@@ -28,8 +27,29 @@ export interface FileStorageConfig extends StorageAdapterConfig {
  * Perfect for local development to avoid recalculating embeddings
  */
 export class FileStorageAdapter<T extends DocumentMetadata = DocumentMetadata> extends BaseStorageAdapter<T> {
+  // Cached `fs/promises` module. Loaded lazily (see `getFs`) so that importing
+  // the package root does not force browser/worker bundlers to resolve
+  // `node:fs`. This is a Node-only adapter; `path` stays a static import because
+  // it is pure JS, tree-shakeable, and needed synchronously in the constructor.
+  private static _fs: typeof import('fs/promises') | null = null;
+
   private fileConfig: Required<Pick<FileStorageConfig, 'cacheDir' | 'fileName'>>;
   private filePath: string;
+
+  /**
+   * Lazily import `fs/promises`. Keeping this off the top-level import graph
+   * means importing the package root never forces a bundler to statically
+   * resolve `node:fs`; the module is only loaded when this Node-only adapter is
+   * actually used. The adapter throws naturally if `fs` is unavailable at runtime.
+   */
+  private async getFs(): Promise<typeof import('fs/promises')> {
+    if (FileStorageAdapter._fs) {
+      return FileStorageAdapter._fs;
+    }
+    const mod = await import('fs/promises');
+    FileStorageAdapter._fs = mod;
+    return mod;
+  }
 
   constructor(config: FileStorageConfig = {}) {
     super(config);
@@ -86,6 +106,7 @@ export class FileStorageAdapter<T extends DocumentMetadata = DocumentMetadata> e
 
   override async initialize(): Promise<void> {
     // Ensure cache directory exists
+    const fs = await this.getFs();
     const dir = path.dirname(this.filePath);
     try {
       await fs.mkdir(dir, { recursive: true });
@@ -101,6 +122,7 @@ export class FileStorageAdapter<T extends DocumentMetadata = DocumentMetadata> e
 
   override async load(): Promise<StoredData<T> | null> {
     try {
+      const fs = await this.getFs();
       const content = await fs.readFile(this.filePath, 'utf-8');
       return this.safeJsonParse<StoredData<T>>(content);
     } catch {
@@ -115,6 +137,7 @@ export class FileStorageAdapter<T extends DocumentMetadata = DocumentMetadata> e
       if (!content) {
         throw new StorageError('Failed to serialize embeddings data');
       }
+      const fs = await this.getFs();
       await fs.writeFile(this.filePath, content, 'utf-8');
     } catch (error) {
       if (error instanceof StorageError) {
@@ -129,6 +152,7 @@ export class FileStorageAdapter<T extends DocumentMetadata = DocumentMetadata> e
 
   override async clear(): Promise<void> {
     try {
+      const fs = await this.getFs();
       await fs.unlink(this.filePath);
     } catch {
       // File doesn't exist, ignore
