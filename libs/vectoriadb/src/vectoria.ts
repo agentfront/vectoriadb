@@ -274,6 +274,9 @@ export class VectoriaDB<T extends DocumentMetadata = DocumentMetadata> {
     const queryVector = await this.embeddingService.generateEmbedding(query);
     const negativeVectors = await this.embedNegatives(options.negativeQuery);
     const negativeWeight = options.negativeWeight ?? 1;
+    if (!Number.isFinite(negativeWeight) || negativeWeight < 0) {
+      throw new QueryValidationError('negativeWeight must be a non-negative number');
+    }
 
     // Use HNSW index if enabled
     if (this.hnswIndex) {

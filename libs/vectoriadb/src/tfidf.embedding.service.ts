@@ -130,6 +130,17 @@ export class TFIDFEmbeddingService {
     if (!Number.isFinite(state.documentCount) || state.documentCount < 0) {
       throw new Error('Invalid TFIDF model state: documentCount must be a non-negative number');
     }
+    // Validate each entry so a malformed snapshot can't seed the Maps with
+    // missing terms or NaN/Infinity weights that would poison later scores.
+    const assertPairs = (pairs: Array<[string, number]>, field: string): void => {
+      for (const pair of pairs) {
+        if (!Array.isArray(pair) || pair.length !== 2 || typeof pair[0] !== 'string' || !Number.isFinite(pair[1])) {
+          throw new Error(`Invalid TFIDF model state: ${field} entries must be [string, finite number] pairs`);
+        }
+      }
+    };
+    assertPairs(state.idf, 'idf');
+    assertPairs(state.df, 'df');
     this.idf = new Map(state.idf);
     this.documentFrequency = new Map(state.df);
     this.documentCount = state.documentCount;

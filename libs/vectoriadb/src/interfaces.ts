@@ -234,7 +234,11 @@ export interface SearchResult<T extends DocumentMetadata = DocumentMetadata> {
   metadata: T;
 
   /**
-   * Cosine similarity score (0-1, higher is better)
+   * Relevance score (higher is better). Bounds depend on the scoring method:
+   * - cosine similarity (default) is roughly in [0, 1];
+   * - BM25 scores are unbounded (a sum of term weights);
+   * - an anti-query (`negativeQuery`) subtracts a penalty, so scores can go
+   *   negative under either method.
    */
   score: number;
 

@@ -312,6 +312,22 @@ export class TFIDFVectoria<T extends DocumentMetadata = DocumentMetadata> {
       negativeWeight = 1,
     } = options;
 
+    // Fail fast on invalid inputs rather than producing incorrect rankings.
+    // (threshold is intentionally only checked for finiteness — BM25 scores are
+    // unbounded, so a threshold > 1 is legitimate.)
+    if (!query || !query.trim()) {
+      throw new Error('Search query cannot be empty or whitespace-only');
+    }
+    if (!Number.isFinite(topK) || topK <= 0) {
+      throw new Error('topK must be a positive number');
+    }
+    if (!Number.isFinite(negativeWeight) || negativeWeight < 0) {
+      throw new Error('negativeWeight must be a non-negative number');
+    }
+    if (!Number.isFinite(threshold)) {
+      throw new Error('threshold must be a finite number');
+    }
+
     // Reindex if needed (before embedding so query + negatives share the vocabulary).
     if (this.needsReindex) {
       this.reindex();
@@ -465,12 +481,32 @@ export class TFIDFVectoria<T extends DocumentMetadata = DocumentMetadata> {
     if (!Number.isFinite(snapshot.avgDocLength) || snapshot.avgDocLength < 0) {
       throw new Error('Invalid TFIDF snapshot: avgDocLength must be a non-negative number');
     }
+    // Validate scoring/BM25/config before adopting them so a tampered snapshot
+    // can't inject non-finite or out-of-range params that would destabilize
+    // (or NaN-poison) downstream scoring.
+    if (snapshot.scoring !== 'cosine' && snapshot.scoring !== 'bm25') {
+      throw new Error('Invalid TFIDF snapshot: scoring must be "cosine" or "bm25"');
+    }
+    const { k1, b } = snapshot.bm25 ?? {};
+    if (!Number.isFinite(k1) || k1 <= 0) {
+      throw new Error('Invalid TFIDF snapshot: bm25.k1 must be a positive number');
+    }
+    if (!Number.isFinite(b) || b < 0 || b > 1) {
+      throw new Error('Invalid TFIDF snapshot: bm25.b must be a number in [0, 1]');
+    }
+    const cfg = snapshot.config ?? {};
+    if (!Number.isFinite(cfg.defaultTopK) || cfg.defaultTopK <= 0) {
+      throw new Error('Invalid TFIDF snapshot: config.defaultTopK must be a positive number');
+    }
+    if (!Number.isFinite(cfg.defaultSimilarityThreshold)) {
+      throw new Error('Invalid TFIDF snapshot: config.defaultSimilarityThreshold must be a finite number');
+    }
     this.config = {
       defaultSimilarityThreshold: snapshot.config.defaultSimilarityThreshold,
       defaultTopK: snapshot.config.defaultTopK,
       scoring: snapshot.scoring,
     };
-    this.bm25 = { ...snapshot.bm25 };
+    this.bm25 = { k1, b };
     this.avgDocLength = snapshot.avgDocLength;
     this.embeddingService.importState(snapshot.model);
 
