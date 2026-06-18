@@ -1,5 +1,5 @@
 import { EmbeddingService } from './embedding.service';
-import { cosineSimilarity } from './similarity.utils';
+import { cosineSimilarity, maxNegativeSimilarity } from './similarity.utils';
 import { HNSWIndex } from './hnsw.index';
 import type {
   VectoriaConfig,
@@ -270,16 +270,26 @@ export class VectoriaDB<T extends DocumentMetadata = DocumentMetadata> {
       throw new QueryValidationError('threshold must be between 0 and 1');
     }
 
-    // Generate query embedding
+    // Generate query embedding + any anti-query embeddings.
     const queryVector = await this.embeddingService.generateEmbedding(query);
+    const negativeVectors = await this.embedNegatives(options.negativeQuery);
+    const negativeWeight = options.negativeWeight ?? 1;
 
     // Use HNSW index if enabled
     if (this.hnswIndex) {
-      return this.searchWithHNSW(queryVector, topK, threshold, options);
+      return this.searchWithHNSW(queryVector, topK, threshold, options, negativeVectors, negativeWeight);
     }
 
     // Fallback to brute-force search
-    return this.searchBruteForce(queryVector, topK, threshold, options);
+    return this.searchBruteForce(queryVector, topK, threshold, options, negativeVectors, negativeWeight);
+  }
+
+  /** Embed the anti-query term(s) (string or array; blanks ignored). */
+  private async embedNegatives(negativeQuery: string | string[] | undefined): Promise<Float32Array[]> {
+    if (negativeQuery == null) return [];
+    const terms = Array.isArray(negativeQuery) ? negativeQuery : [negativeQuery];
+    const valid = terms.filter((t) => typeof t === 'string' && t.trim().length > 0);
+    return Promise.all(valid.map((t) => this.embeddingService.generateEmbedding(t)));
   }
 
   /**
@@ -290,9 +300,14 @@ export class VectoriaDB<T extends DocumentMetadata = DocumentMetadata> {
     topK: number,
     threshold: number,
     options: SearchOptions<T>,
+    negativeVectors: Float32Array[] = [],
+    negativeWeight = 1,
   ): SearchResult<T>[] {
-    // Get candidates from HNSW (more than topK to account for filtering)
-    const searchK = options.filter ? Math.min(topK * 3, this.embeddings.size) : topK;
+    const hasNegatives = negativeVectors.length > 0;
+    // Over-scan candidates when filtering OR applying an anti-query — both can
+    // re-rank/remove the top approximate hits, so the final top-K must be
+    // selected from a wider pool than `topK`.
+    const searchK = options.filter || hasNegatives ? Math.min(topK * 3, this.embeddings.size) : topK;
     const candidates = this.hnswIndex!.search(queryVector, searchK, this.config.hnsw?.efSearch);
 
     const results: SearchResult<T>[] = [];
@@ -308,8 +323,12 @@ export class VectoriaDB<T extends DocumentMetadata = DocumentMetadata> {
         continue;
       }
 
-      // Convert distance to similarity (HNSW uses distance = 1 - similarity)
-      const score = 1 - candidate.distance;
+      // Convert distance to similarity (HNSW uses distance = 1 - similarity),
+      // then subtract the anti-query penalty (if any).
+      let score = 1 - candidate.distance;
+      if (hasNegatives) {
+        score -= negativeWeight * maxNegativeSimilarity(embedding.vector, negativeVectors);
+      }
 
       if (score >= threshold) {
         const result: SearchResult<T> = {
@@ -325,14 +344,20 @@ export class VectoriaDB<T extends DocumentMetadata = DocumentMetadata> {
 
         results.push(result);
 
-        // Stop early if we have enough results
-        if (results.length >= topK) {
+        // Early-stop only when NOT re-ranking — with an anti-query the HNSW
+        // order no longer matches the final order.
+        if (!hasNegatives && results.length >= topK) {
           break;
         }
       }
     }
 
-    return results;
+    // Re-rank when the anti-query changed scores away from HNSW distance order.
+    if (hasNegatives) {
+      results.sort((a, b) => b.score - a.score);
+    }
+
+    return results.slice(0, topK);
   }
 
   /**
@@ -343,6 +368,8 @@ export class VectoriaDB<T extends DocumentMetadata = DocumentMetadata> {
     topK: number,
     threshold: number,
     options: SearchOptions<T>,
+    negativeVectors: Float32Array[] = [],
+    negativeWeight = 1,
   ): SearchResult<T>[] {
     const results: SearchResult<T>[] = [];
 
@@ -352,7 +379,10 @@ export class VectoriaDB<T extends DocumentMetadata = DocumentMetadata> {
         continue;
       }
 
-      const score = cosineSimilarity(queryVector, embedding.vector);
+      let score = cosineSimilarity(queryVector, embedding.vector);
+      if (negativeVectors.length > 0) {
+        score -= negativeWeight * maxNegativeSimilarity(embedding.vector, negativeVectors);
+      }
 
       if (score >= threshold) {
         const result: SearchResult<T> = {

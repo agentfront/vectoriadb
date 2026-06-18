@@ -36,3 +36,14 @@ yarn-error.log
 **/.cache/
 
 .claude
+
+# Yarn (berry / yarn 4) — ignore caches/state, KEEP patches/releases/plugins/sdks
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+yarn-debug.log*
+.yarn/install-state.gz

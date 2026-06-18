@@ -39,6 +39,26 @@ export function cosineSimilarity(a: Float32Array, b: Float32Array): number {
 }
 
 /**
+ * Greatest cosine similarity between a document vector and any of the given
+ * anti-query vectors — the penalty term for negative/anti-query search
+ * (`score = sim(doc, query) − weight · maxNegativeSimilarity(doc, negatives)`).
+ * Returns `0` when there are no negatives.
+ *
+ * @param docVector The document vector being scored
+ * @param negativeVectors Anti-query vectors (same dimensionality as `docVector`)
+ */
+export function maxNegativeSimilarity(docVector: Float32Array, negativeVectors: Float32Array[]): number {
+  let max = 0;
+  for (const negative of negativeVectors) {
+    const sim = cosineSimilarity(docVector, negative);
+    if (sim > max) {
+      max = sim;
+    }
+  }
+  return max;
+}
+
+/**
  * Normalize a vector to unit length
  * @param vector Vector to normalize
  * @returns Normalized vector (or original vector unchanged if it's a zero vector)
