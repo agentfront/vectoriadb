@@ -33,6 +33,8 @@
     ".": {
       "development": "./src/index.ts",
       "types": "./dist/src/index.d.ts",
+      "worker": "./dist/src/worker.js",
+      "browser": "./dist/src/worker.js",
       "import": "./dist/src/index.js",
       "default": "./dist/src/index.js"
     },
