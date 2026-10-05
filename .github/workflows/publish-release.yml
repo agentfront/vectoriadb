@@ -74,7 +74,7 @@ jobs:
           registry-url: "https://registry.npmjs.org/"
 
       - name: Update npm CLI for trusted publishing
-        run: npm install -g npm@latest
+        run: npm install -g npm@11.5.1 # Pinned: the first npm with OIDC publishing; npm@latest can require a newer Node than .nvmrc
 
       - name: Compute version
         id: version
