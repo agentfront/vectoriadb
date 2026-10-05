@@ -6803,6 +6803,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "vectoriadb@workspace:libs/vectoriadb"
   dependencies:
+    tslib: "npm:^2.8.1"
     typescript: "npm:^5.9.3"
   peerDependencies:
     "@huggingface/transformers": ^3.2.2

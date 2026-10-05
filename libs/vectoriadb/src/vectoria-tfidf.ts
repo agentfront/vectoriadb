@@ -1,6 +1,6 @@
 import { TFIDFEmbeddingService } from './tfidf.embedding.service';
 import type { DocumentMetadata, SearchOptions, SearchResult } from './interfaces';
-import { sanitizeObject } from './storage/serialization.utils';
+import { sanitizeObject } from './sanitize.utils';
 
 /**
  * Document with TF-IDF sparse vector representation
