@@ -1,3 +1,5 @@
+import { defaultTokenizer, type Tokenizer } from './tokenizer';
+
 /**
  * Lightweight TF-IDF based embedding service for semantic search
  *
@@ -18,14 +20,17 @@ export class TFIDFEmbeddingService {
   private documentCount = 0;
 
   /**
-   * Tokenizes and normalizes text into terms
+   * @param tokenizer - Splits text into terms. Defaults to {@link defaultTokenizer}, which keeps the letters of every
+   *   script.
+   */
+  constructor(private readonly tokenizer: Tokenizer = defaultTokenizer) {}
+
+  /**
+   * Tokenizes and normalizes text into terms, with the tokenizer this service was created with. Anything a custom
+   * tokenizer returns that is not a non-empty string is left out.
    */
   tokenize(text: string): string[] {
-    return text
-      .toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter((term) => term.length > 1); // Filter out single characters
+    return this.tokenizer(text).filter((term) => typeof term === 'string' && term.length > 0);
   }
 
   /**
