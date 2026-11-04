@@ -1,6 +1,7 @@
 import { TFIDFEmbeddingService } from './tfidf.embedding.service';
 import type { DocumentMetadata, SearchOptions, SearchResult } from './interfaces';
 import { sanitizeObject } from './sanitize.utils';
+import { DEFAULT_TOKENIZER_ID, type Tokenizer } from './tokenizer';
 
 /**
  * Document with TF-IDF sparse vector representation
@@ -95,6 +96,21 @@ export interface TFIDFVectoriaConfig {
    * BM25 tuning (only used when `scoring: 'bm25'`).
    */
   bm25?: BM25Params;
+
+  /**
+   * Splits document and query text into terms. Defaults to {@link defaultTokenizer}, which keeps the letters of
+   * every script. Wrap it to add your own rules, such as leaving out stop words:
+   * `tokenizer: (text) => defaultTokenizer(text).filter((term) => !stopWords.has(term))`.
+   */
+  tokenizer?: Tokenizer;
+
+  /**
+   * A name for `tokenizer` that changes whenever the terms it gives change, recorded in snapshots. A snapshot is
+   * used as it is only when it was built with the same id; otherwise it is re-indexed from its text. Without an id,
+   * a snapshot of an index with a custom tokenizer is always re-indexed. Ignored without `tokenizer`: the default
+   * tokenizer's id is {@link DEFAULT_TOKENIZER_ID}.
+   */
+  tokenizerId?: string;
 }
 
 /**
@@ -107,6 +123,11 @@ export interface TFIDFVectoriaConfig {
 export interface TFIDFSnapshot<T extends DocumentMetadata = DocumentMetadata> {
   /** Snapshot schema version. */
   v: 1;
+  /**
+   * The id of the tokenizer that built the snapshot. Snapshots from before 2.3.4 have none, and are re-indexed from
+   * their text when loaded.
+   */
+  tokenizer?: string;
   scoring: TFIDFScoring;
   bm25: Required<BM25Params>;
   config: Required<Pick<TFIDFVectoriaConfig, 'defaultSimilarityThreshold' | 'defaultTopK'>>;
@@ -157,14 +178,17 @@ export interface TFIDFSnapshot<T extends DocumentMetadata = DocumentMetadata> {
 export class TFIDFVectoria<T extends DocumentMetadata = DocumentMetadata> {
   private documents: Map<string, TFIDFDocument<T>>;
   private embeddingService: TFIDFEmbeddingService;
-  private config: Required<Omit<TFIDFVectoriaConfig, 'bm25'>>;
+  private config: Required<Omit<TFIDFVectoriaConfig, 'bm25' | 'tokenizer' | 'tokenizerId'>>;
+  /** Recorded in snapshots; `undefined` for a custom tokenizer without an id, so its snapshots always re-index. */
+  private readonly tokenizerId: string | undefined;
   private bm25: Required<BM25Params>;
   private avgDocLength = 0;
   private needsReindex = false;
 
   constructor(config: TFIDFVectoriaConfig = {}) {
     this.documents = new Map();
-    this.embeddingService = new TFIDFEmbeddingService();
+    this.embeddingService = new TFIDFEmbeddingService(config.tokenizer);
+    this.tokenizerId = config.tokenizer ? config.tokenizerId : DEFAULT_TOKENIZER_ID;
 
     this.config = {
       defaultSimilarityThreshold: config.defaultSimilarityThreshold ?? 0.0,
@@ -439,6 +463,7 @@ export class TFIDFVectoria<T extends DocumentMetadata = DocumentMetadata> {
     if (this.needsReindex) this.reindex();
     return {
       v: 1,
+      ...(this.tokenizerId !== undefined ? { tokenizer: this.tokenizerId } : {}),
       scoring: this.config.scoring,
       bm25: { ...this.bm25 },
       config: {
@@ -501,12 +526,37 @@ export class TFIDFVectoria<T extends DocumentMetadata = DocumentMetadata> {
     if (!Number.isFinite(cfg.defaultSimilarityThreshold)) {
       throw new Error('Invalid TFIDF snapshot: config.defaultSimilarityThreshold must be a finite number');
     }
+    if (snapshot.tokenizer !== undefined && typeof snapshot.tokenizer !== 'string') {
+      throw new Error('Invalid TFIDF snapshot: tokenizer must be a string');
+    }
+    // The stored vectors hold the terms of the tokenizer that built the snapshot. Another tokenizer's query terms
+    // wouldn't match them, so such a snapshot keeps its documents and is re-indexed from their text.
+    const sameTokenizer = this.tokenizerId !== undefined && snapshot.tokenizer === this.tokenizerId;
     this.config = {
       defaultSimilarityThreshold: snapshot.config.defaultSimilarityThreshold,
       defaultTopK: snapshot.config.defaultTopK,
       scoring: snapshot.scoring,
     };
     this.bm25 = { k1, b };
+    if (!sameTokenizer) {
+      this.documents = new Map();
+      for (const d of snapshot.documents) {
+        if (typeof d.id !== 'string' || typeof d.text !== 'string') {
+          throw new Error('Invalid TFIDF snapshot: each document needs a string id and text');
+        }
+        this.documents.set(d.id, {
+          id: d.id,
+          text: d.text,
+          metadata: sanitizeObject(d.metadata) as T,
+          createdAt: new Date(d.createdAt),
+          vector: new Map(),
+        });
+      }
+      this.embeddingService.clear();
+      this.needsReindex = true;
+      this.reindex();
+      return;
+    }
     this.avgDocLength = snapshot.avgDocLength;
     this.embeddingService.importState(snapshot.model);
 

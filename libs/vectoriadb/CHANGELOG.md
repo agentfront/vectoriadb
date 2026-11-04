@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `TFIDFVectoria` indexes words in every script. The tokenizer kept `[A-Za-z0-9_]` only, so words in Hebrew, Arabic,
+  Cyrillic, Greek, Chinese or Japanese had no terms, and accented Latin words broke into fragments (`Vögel` was
+  `gel`). The default tokenizer keeps letters, marks and digits in any script, folds accents on Latin and Greek letters,
+  and splits Chinese, Japanese, Thai, Lao, Khmer and Myanmar into characters and neighbor pairs. ASCII text gives the
+  same terms as before.
+- `loadSnapshot()` re-indexes a snapshot from its text when it was built with another tokenizer, including every
+  snapshot from before this release, instead of restoring vectors that hold the other tokenizer's terms.
+
+### Added
+
+- `TFIDFVectoria` options `tokenizer` and `tokenizerId`, and the exports `defaultTokenizer`, `DEFAULT_TOKENIZER_ID`
+  and `Tokenizer`, from `vectoriadb` and `vectoriadb/worker`.
+- `TFIDFEmbeddingService` takes a tokenizer in its constructor.
+- `TFIDFSnapshot.tokenizer`, the id of the tokenizer that built the snapshot.
+
 ## [2.3.0] - 2026-06-18
 
 ## [2.1.0] - 2026-01-27
