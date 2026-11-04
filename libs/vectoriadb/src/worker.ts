@@ -11,12 +11,8 @@
  * starts and `scoring: 'bm25'` for stronger keyword relevance.
  */
 export { TFIDFVectoria } from './vectoria-tfidf';
-export type {
-  TFIDFDocument,
-  TFIDFVectoriaConfig,
-  TFIDFScoring,
-  BM25Params,
-  TFIDFSnapshot,
-} from './vectoria-tfidf';
+export type { TFIDFDocument, TFIDFVectoriaConfig, TFIDFScoring, BM25Params, TFIDFSnapshot } from './vectoria-tfidf';
 export { TFIDFEmbeddingService } from './tfidf.embedding.service';
+export { defaultTokenizer, DEFAULT_TOKENIZER_ID } from './tokenizer';
+export type { Tokenizer } from './tokenizer';
 export type { DocumentMetadata, SearchOptions, SearchResult, FilterFunction } from './interfaces';

@@ -20,6 +20,10 @@ constructor(config?: TFIDFConfig)
 interface TFIDFConfig {
   defaultSimilarityThreshold?: number;
   defaultTopK?: number;
+  scoring?: 'cosine' | 'bm25';
+  bm25?: { k1?: number; b?: number };
+  tokenizer?: (text: string) => string[];
+  tokenizerId?: string;
 }
 ```
 
@@ -27,6 +31,10 @@ interface TFIDFConfig {
 |--------|------|---------|-------------|
 | `defaultSimilarityThreshold` | `number` | `0.0` | Default minimum similarity |
 | `defaultTopK` | `number` | `10` | Default results limit |
+| `scoring` | `'cosine' \| 'bm25'` | `'cosine'` | Ranking function |
+| `bm25` | `{ k1?, b? }` | `{ k1: 1.5, b: 0.75 }` | BM25 tuning, used with `scoring: 'bm25'` |
+| `tokenizer` | `(text) => string[]` | `defaultTokenizer` | Splits document and query text into terms. See [Languages and tokenization](/vectoriadb/guides/alternatives/tfidf#languages-and-tokenization) |
+| `tokenizerId` | `string` | | A name for `tokenizer` that changes whenever its terms change. A snapshot built with another id is re-indexed from its text when loaded |
 
 ## Example
 
