@@ -121,6 +121,59 @@ This means:
 - Unique terms specific to a document get high scores
 - The query is matched against TF-IDF vectors using cosine similarity
 
+## Languages and tokenization
+
+Documents and queries go through the same tokenizer, so a query term matches only a term from a document. The default
+tokenizer, `defaultTokenizer`, gives lowercase terms in any script:
+
+- Letters, combining marks, digits and `_` make up terms; everything else separates them. Terms of one character are
+  left out.
+- Text is NFKD-normalized: compatibility forms are folded (`ﬁle` is `file`, full-width `ｃａｔｓ` is `cats`), and marks
+  on Latin and Greek letters are dropped, so `Vögel` matches `Vogel` and `café` matches `cafe`. Other marks are kept:
+  Cyrillic `й`, and Hebrew, Arabic and Devanagari words, stay as written.
+- Chinese, Japanese, Thai, Lao, Khmer and Myanmar are written without spaces between words, so there are no word
+  boundaries to split on. A run of Chinese characters gives each character and each pair of neighbors (`查找狗` is
+  `查`, `找`, `狗`, `查找`, `找狗`). A run of kana or of Thai, Lao, Khmer or Myanmar gives each pair of neighbors. Pairs
+  give the same terms in every runtime, where a dictionary segmenter like `Intl.Segmenter` depends on the runtime's
+  ICU data.
+
+```ts title="src/tfidf-languages.ts"
+const db = new TFIDFVectoria({ defaultSimilarityThreshold: 0.01 });
+db.addDocument('he', 'מציאת כלבים, חתולים וציפורים', { id: 'he' });
+db.addDocument('zh', '查找狗、猫和鸟', { id: 'zh' });
+db.addDocument('de', 'Hunde, Katzen und Vögel finden', { id: 'de' });
+db.reindex();
+
+db.search('חתולים'); // he
+db.search('猫');      // zh
+db.search('Vogel');  // de
+```
+
+Before 2.3.4, the tokenizer kept `[A-Za-z0-9_]` only, so words in other scripts had no terms. ASCII text gives the same
+terms as before.
+
+### A custom tokenizer
+
+Pass `tokenizer` to change how text is split. Wrap `defaultTokenizer` to add your own rules, such as leaving out stop
+words:
+
+```ts title="src/tfidf-stop-words.ts"
+import { defaultTokenizer, TFIDFVectoria } from 'vectoriadb';
+
+const stopWords = new Set(['the', 'a', 'of', 'and']);
+
+const db = new TFIDFVectoria({
+  tokenizer: (text) => defaultTokenizer(text).filter((term) => !stopWords.has(term)),
+  tokenizerId: 'english-stop-words-1',
+});
+```
+
+A snapshot records the id of the tokenizer that built it. `loadSnapshot()` uses a snapshot's stored vectors only when
+that id is the instance's own. Otherwise it re-indexes the snapshot's documents from their text. Give a custom
+tokenizer a `tokenizerId`, and change it whenever the tokenizer's terms change, so cached snapshots stay usable.
+Without one, snapshots of that index are always re-indexed. Snapshots from before 2.3.4 have no id, and are re-indexed
+once when loaded.
+
 ## Example: Tool Discovery
 
 ```ts title="src/tfidf-tool-discovery.ts"
@@ -162,7 +215,7 @@ const results = toolSearch.search('create account');
 
 ## Limitations
 
-1. **No semantic understanding** - "car" won't match "automobile"
+1. **No semantic understanding** - "car" won't match "automobile", and a query in one language won't match a document in another
 2. **Reindex requirement** - Must call `reindex()` after changes
 3. **Limited to keywords** - Misspellings and synonyms aren't handled
 4. **Memory for large vocabularies** - IDF tables grow with vocabulary size
